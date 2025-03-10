@@ -88,13 +88,13 @@ def create_column_filter_widget(columns=column_list):
     
     # Create each section
     if columns_by_altitude['0_m']:
-        sections.append(create_section("Surface Level (0m)", columns_by_altitude['0_m']))
+        sections.append(create_section("0 m Level", columns_by_altitude['0_m']))
     
     if columns_by_altitude['1000_m']:
-        sections.append(create_section("1000m Level", columns_by_altitude['1000_m']))
+        sections.append(create_section("1000 m Level", columns_by_altitude['1000_m']))
     
     if columns_by_altitude['5000_m']:
-        sections.append(create_section("5000m Level", columns_by_altitude['5000_m']))
+        sections.append(create_section("5000 m Level", columns_by_altitude['5000_m']))
     
     # Create output widget for selection summary
     output = widgets.Output()
@@ -183,7 +183,7 @@ class HistogramWidget:
         self.value_dropdown = widgets.Dropdown(
             options=self.numeric_columns,
             value=self.numeric_columns[0],
-            description='Column:',
+            description='Input Feature:',
             disabled=False
         )
         
@@ -268,9 +268,65 @@ class HistogramWidget:
     
     def display(self):
         """Display the widget."""
-        display(self.widget)
+        display(widgets.HTML(value="<h3>Input Features</h3>"),
+                self.widget)
         # Generate initial plot
         self.update_plot(None)
+
+def create_correlation_plot_controls():
+    """Creates control widgets for correlation plots."""
+    # Add title label with larger size and bold styling
+    title = widgets.HTML(value='<h3 style="font-weight: bold; margin: 0; padding: 0;">Comparison Plot</h3>')
+    
+    var_dropdown = widgets.Dropdown(
+        options=[
+            ('Variables at 0 m', '0m'),
+            ('Variables at 1000 m', '1000m'),
+            ('Variables at 5000 m', '5000m')
+        ],
+        description='Level:',
+        disabled=False
+    )
+
+    plot_button = widgets.Button(description="Plot")
+    output = widgets.Output()
+    
+    return title, var_dropdown, plot_button, output
+
+
+def display_correlation_plot_dashboard(base_url="https://elearning.unidata.ucar.edu/dataeLearning/Cybertraining/applications/media/pairplot_"):
+    """Creates and displays interactive dashboard for correlation plots."""
+    # Create interface controls
+    title, var_dropdown, plot_button, output = create_correlation_plot_controls()
+    
+    def update_image(_):
+        selected_var = var_dropdown.value
+        image_url = f"{base_url}{selected_var}.png"
+        
+        with output:
+            output.clear_output(wait=True)
+            display(HTML(
+                f'<center><i>Click to enlarge</i><br>'
+                f'<a href="{image_url}" target="blank">'
+                f'<img src="{image_url}" width="800px"></a></center>'
+            ))
+    
+    plot_button.on_click(update_image)
+    display(title, var_dropdown, plot_button, output)
+
+"""
+# Code used to make the pairplots
+colors = {'rain': '#77aadd', 'snow': '#ee8866'}
+markers = {'rain': '^', 'snow': 'o'} 
+title = "Comparison Plots at 5000 m AGL"
+f = sns.pairplot(df[['TEMP_C_5000_m', 
+                 'T_DEWPOINT_C_5000_m', 
+                 'PRES_Pa_5000_m',
+                 'UGRD_m/s_5000_m', 
+                 'VGRD_m/s_5000_m', 
+                 'ptype']].sample(2000), hue='ptype', palette=colors, markers=markers)
+f.fig.suptitle(title,y=1.005, fontsize=16)
+"""
 
 def create_ml_knowledgecheck():
     """
@@ -402,7 +458,7 @@ def create_percentage_widget():
 def algorithm_selection():
     """Creates widget for algorithm selection and returns selected value via callback."""
     algorithm_options = {
-        "Multivariate Logistic Regression": "logistic_regression",
+        "LogisticRegression (Linear)": "logistic_regression",
         "Random Forest Classifier": "random_forest"
     }
     # Use a list to store the selection (mutable)
