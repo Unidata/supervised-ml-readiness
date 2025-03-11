@@ -659,26 +659,36 @@ def train_val_test_split(df,
     y_test : pandas.Series
         Target for testing.
     """
+    from sklearn.model_selection import train_test_split
+    
     # Verify that the proportions sum to 1
     if abs(train_size + val_size + test_size - 1.0) > 1e-10:
         raise ValueError("train_size, val_size, and test_size should sum to 1.0")
     
-    # First, split into training and temp (validation + test)
-    relative_test_size = test_size / (val_size + test_size)
+    total_samples = len(df)
     
-    df_train, df_temp = train_test_split(
-        df, 
-        train_size=train_size,
-        test_size=val_size + test_size,
-        random_state=random_state
-    )
+    # Calculate exact sample counts that won't exceed the total
+    train_count = int(total_samples * train_size)
+    val_count = int(total_samples * val_size)
+    test_count = total_samples - train_count - val_count
     
-    # Then split the temp set into validation and test
-    df_val, df_test = train_test_split(
-        df_temp,
-        test_size=relative_test_size,
-        random_state=random_state
-    )
+    # Ensure we don't get rounding errors that exceed total
+    if train_count + val_count + test_count != total_samples:
+        # We prioritize keeping training set size as requested
+        test_count = total_samples - train_count - val_count
+        if abs(train_count + val_count + test_count - total_samples) == 1:
+            print(f"Off-by-one adjustment made: Train={train_count}, Val={val_count}, Test={test_count}")
+    
+    # First, split off the training set (using absolute count)
+    from sklearn.utils import shuffle
+    
+    # Shuffle the dataset
+    shuffled_df = shuffle(df, random_state=random_state)
+    
+    # Split into train, val, and test
+    df_train = shuffled_df.iloc[:train_count]
+    df_val = shuffled_df.iloc[train_count:train_count+val_count]
+    df_test = shuffled_df.iloc[train_count+val_count:]
     
     # Split each dataframe into X and y
     X_train = df_train.drop(columns=[y_col])
@@ -689,9 +699,5 @@ def train_val_test_split(df,
     
     X_test = df_test.drop(columns=[y_col])
     y_test = df_test[y_col]
-    
-    print(f"Train set: {len(X_train)} samples ({len(X_train)/len(df):.1%})")
-    print(f"Validation set: {len(X_val)} samples ({len(X_val)/len(df):.1%})")
-    print(f"Test set: {len(X_test)} samples ({len(X_test)/len(df):.1%})")
     
     return X_train, y_train, X_val, y_val, X_test, y_test
