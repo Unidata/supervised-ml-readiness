@@ -750,3 +750,49 @@ def plot_confusion_matrix(class_labels, y_true, y_pred, title='Confusion Matrix'
     
     # Return the figure (useful if you want to save it or modify it further)
     return fig
+
+def standardize_data(X_train, X_val, X_test):
+    """
+    Standardize multiple datasets using a StandardScaler fit only on the training data.
+    
+    Parameters:
+    -----------
+    X_train : pandas.DataFrame
+        Training data to fit the scaler and transform
+    X_val : pandas.DataFrame
+        Validation data to transform
+    X_test : pandas.DataFrame
+        Test data to transform
+        
+    Returns:
+    --------
+    tuple
+        (X_train_scaled, X_val_scaled, X_test_scaled)
+        All as pandas DataFrames with original column names and indices preserved
+    """
+    from sklearn.preprocessing import StandardScaler
+    
+    # Initialize the scaler
+    scaler = StandardScaler()
+    
+    # Fit the scaler to the training data and transform it
+    X_train_scaled = pd.DataFrame(
+        scaler.fit_transform(X_train),
+        columns=X_train.columns,
+        index=X_train.index
+    )
+    
+    # Transform the validation and test data using the same scaler
+    X_val_scaled = pd.DataFrame(
+        scaler.transform(X_val),
+        columns=X_val.columns,
+        index=X_val.index
+    )
+    
+    X_test_scaled = pd.DataFrame(
+        scaler.transform(X_test),
+        columns=X_test.columns,
+        index=X_test.index
+    )
+    
+    return X_train_scaled, X_val_scaled, X_test_scaled
