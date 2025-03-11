@@ -701,3 +701,52 @@ def train_val_test_split(df,
     y_test = df_test[y_col]
     
     return X_train, y_train, X_val, y_val, X_test, y_test
+
+
+def plot_confusion_matrix(class_labels, y_true, y_pred, title='Confusion Matrix', figsize=(4.5, 3.5), cmap='Blues'):
+    """
+    Creates and plots a confusion matrix as a heatmap.
+    
+    Parameters:
+    -----------
+    class_labels : list or array
+        Labels for the classes in the classification task.
+    y_true : array-like
+        True labels.
+    y_pred : array-like
+        Predicted labels.
+    title : str, optional (default='Confusion Matrix')
+        Title of the plot.
+    figsize : tuple, optional (default=(4.5, 3.5))
+        Figure size (width, height) in inches.
+    cmap : str, optional (default='Blues')
+        Colormap for the heatmap.
+        
+    Returns:
+    --------
+    fig : matplotlib.figure.Figure
+        The figure containing the confusion matrix plot.
+    """
+    from sklearn.metrics import confusion_matrix
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    # Create confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+    
+    # Create figure and axes
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # Create heatmap with labels
+    sns.heatmap(cm, annot=True, fmt='d', cmap=cmap,
+                xticklabels=class_labels,
+                yticklabels=class_labels,
+                cbar=False, ax=ax)
+    
+    # Set labels and title
+    ax.set_xlabel('Prediction')
+    ax.set_ylabel('True Observation')
+    ax.set_title(title)
+    
+    # Return the figure (useful if you want to save it or modify it further)
+    return fig
