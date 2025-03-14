@@ -700,7 +700,10 @@ def train_val_test_split(df,
     X_test = df_test.drop(columns=[y_col])
     y_test = df_test[y_col]
     
-    return X_train, y_train, X_val, y_val, X_test, y_test
+    # Will output scaled data
+    X_train_scaled, X_val_scaled, X_test_scaled = standardize_data(X_train, X_val, X_test)
+
+    return X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test
 
 
 def plot_confusion_matrix(class_labels, y_true, y_pred, title='Confusion Matrix', figsize=(4.5, 3.5), cmap='Blues'):
