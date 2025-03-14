@@ -822,11 +822,12 @@ def classification_model_eval(model, X_test, y_test, title='Model Evaluation'):
     # Get class labels
     class_labels = model.classes_
     
+    updated_title = "Correlation Matrix " + title
     # Plot confusion matrix
     fig = plot_confusion_matrix(class_labels, 
                                y_true=y_test, 
                                y_pred=y_pred, 
-                               title=title)
+                               title=updated_title)
     plt.show()
     
     # Calculate metrics
@@ -835,26 +836,32 @@ def classification_model_eval(model, X_test, y_test, title='Model Evaluation'):
                                                              labels=['rain', 'snow'])
     accuracy = (accuracy_score(y_test, y_pred)) * 100
     
+    # Get model type
+    model_type = type(model).__name__
+    
+    # Get input features (columns in X)
+    input_features = X_test.columns.tolist() if hasattr(X_test, 'columns') else []
+    
     # Print results
     print(f"{title} Metrics")
-    print("Used this algo + these input features")
+    print(f"Model Type: {model_type}")
+    print(f"Input Features: {', '.join(input_features)}")
+    print(" ")
     print(f"Accuracy: {accuracy:.2f}%")
     print(f"Rain Precision: {precision[0]:.3f}")
     print(f"Snow Precision: {precision[1]:.3f}")
     print(f"Rain Recall: {recall[0]:.3f}")
     print(f"Snow Recall: {recall[1]:.3f}")
-    print(f"Rain F1 Score: {f1[0]:.3f}")
-    print(f"Snow F1 Score: {f1[1]:.3f}")
     
     # Return metrics as a dictionary for further use if needed
     metrics = {
+        'model_type': model_type,
+        'input_features': input_features,
         'accuracy': accuracy,
         'rain_precision': precision[0],
         'snow_precision': precision[1],
         'rain_recall': recall[0],
-        'snow_recall': recall[1],
-        'rain_f1': f1[0],
-        'snow_f1': f1[1]
+        'snow_recall': recall[1]
     }
     
     return metrics
