@@ -16,6 +16,9 @@ from xgboost import XGBClassifier
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression
 
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
 # Machine learning
 from sklearn.base import BaseEstimator
 from sklearn.linear_model import LinearRegression
@@ -799,3 +802,59 @@ def standardize_data(X_train, X_val, X_test):
     )
     
     return X_train_scaled, X_val_scaled, X_test_scaled
+
+def classification_model_eval(model, X_test, y_test, title='Model Evaluation'):
+    """
+    Evaluate a trained classification model with confusion matrix and metrics.
+    
+    Parameters:
+    model: The trained classifier model
+    X_test: Test features
+    y_test: True test labels
+    title: Title for the confusion matrix plot
+    
+    Returns:
+    dict: Dictionary containing all evaluation metrics
+    """
+    # Make predictions
+    y_pred = model.predict(X_test)
+    
+    # Get class labels
+    class_labels = model.classes_
+    
+    # Plot confusion matrix
+    fig = plot_confusion_matrix(class_labels, 
+                               y_true=y_test, 
+                               y_pred=y_pred, 
+                               title=title)
+    plt.show()
+    
+    # Calculate metrics
+    precision, recall, f1, _ = precision_recall_fscore_support(y_test, y_pred, 
+                                                             average=None, 
+                                                             labels=['rain', 'snow'])
+    accuracy = (accuracy_score(y_test, y_pred)) * 100
+    
+    # Print results
+    print(f"{title} Metrics")
+    print("Used this algo + these input features")
+    print(f"Accuracy: {accuracy:.2f}%")
+    print(f"Rain Precision: {precision[0]:.3f}")
+    print(f"Snow Precision: {precision[1]:.3f}")
+    print(f"Rain Recall: {recall[0]:.3f}")
+    print(f"Snow Recall: {recall[1]:.3f}")
+    print(f"Rain F1 Score: {f1[0]:.3f}")
+    print(f"Snow F1 Score: {f1[1]:.3f}")
+    
+    # Return metrics as a dictionary for further use if needed
+    metrics = {
+        'accuracy': accuracy,
+        'rain_precision': precision[0],
+        'snow_precision': precision[1],
+        'rain_recall': recall[0],
+        'snow_recall': recall[1],
+        'rain_f1': f1[0],
+        'snow_f1': f1[1]
+    }
+    
+    return metrics
