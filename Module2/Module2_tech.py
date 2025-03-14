@@ -331,62 +331,6 @@ f = sns.pairplot(df[['TEMP_C_5000_m',
 f.fig.suptitle(title,y=1.005, fontsize=16)
 """
 
-def create_ml_knowledgecheck():
-    """
-    Creates an interactive knowledge check about ML concepts with two buttons and feedback.
-    Returns the display elements for use in a Jupyter notebook.
-    """
-    output = widgets.Output()
-
-    question = widgets.HTML(
-        "Which type of machine learning analysis is most appropriate for this scenario?"
-    )
-    
-    # Create buttons
-    classification_button = widgets.Button(
-        description='Classification',
-        layout=widgets.Layout(width='200px', height='200px', margin='10px')
-    )
-    
-    regression_button = widgets.Button(
-        description='Regression',
-        layout=widgets.Layout(width='200px', height='200px', margin='10px')
-    )
-    
-    def show_feedback(is_correct):
-        """Helper function to display feedback"""
-        with output:
-            clear_output(wait=True)
-            if is_correct:
-                display(HTML("""
-                    <div class="alert alert-info" role="feedback">
-                        <p class="admonition-title" style="font-weight:bold">Correct</p>
-                        <p>This scenario requires a numerical output, so we will use a regression algorithm for this scenario.</p>
-                    </div>
-                """))
-            else:
-                display(HTML("""
-                    <div class="alert alert-info" role="feedback">
-                        <p class="admonition-title" style="font-weight:bold">Incorrect</p>
-                        <p>Classification tasks work for scenarios that require classifying data into categories. 
-                        This task needs a <i>numerical value </i>for output, and therefore requires a different approach.</p>
-                    </div>
-                """))
-    
-    # Define click handlers
-    classification_button.on_click(lambda b: show_feedback(False))
-    regression_button.on_click(lambda b: show_feedback(True))
-    
-    # Create button container
-    buttons = widgets.HBox([classification_button, regression_button])
-    
-    return question, buttons, output
-
-def display_knowledgecheck():
-    """Creates and displays the knowledge check in the notebook."""
-    question, buttons, output = create_ml_knowledgecheck()
-    display(question, buttons, output)
-
 def create_percentage_widget():
     """Creates widget for specifying training/validation/testing splits."""
     # Create text widgets for percentages
@@ -494,45 +438,6 @@ def algorithm_selection():
         return selection[0]
         
     return get_selection
-
-def create_station_selector():
-    """Creates grid of checkboxes for station selection."""
-    checkboxes = {
-        station: widgets.Checkbox(
-            value=False,
-            description=station,
-            disabled=False,
-            indent=False
-        ) 
-        for station in STATIONS
-    }
-    
-    checkbox_grid = widgets.GridBox(
-        children=[checkboxes[station] for station in STATIONS],
-        layout=widgets.Layout(
-            grid_template_columns='repeat(3, auto)',
-            grid_gap='10px'
-        )
-    )
-    
-    output = widgets.Output()
-    
-    def on_change(change):
-        with output:
-            output.clear_output()
-            selected = [station for station, checkbox in checkboxes.items() if checkbox.value]
-            print(f"Selected stations: {', '.join(selected) if selected else 'None'}")
-    
-    for checkbox in checkboxes.items():
-        checkbox[1].observe(on_change, names='value')
-    
-    display(widgets.VBox([
-        widgets.HTML(value="<h3>Select Weather Stations</h3>"),
-        checkbox_grid,
-        output
-    ]))
-    
-    return checkboxes
 
 def train_button(algorithm, X_train_filtered, y_train):
     """
