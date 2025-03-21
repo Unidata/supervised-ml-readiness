@@ -78,7 +78,7 @@ def create_column_filter_widget(columns=column_list):
             layout=widgets.Layout(
                 grid_template_columns='repeat(3, auto)',
                 grid_gap='5px',
-                width='100%',
+                width='80%',
                 padding='2px'
             )
         )
@@ -727,7 +727,7 @@ def classification_model_eval(model, X_test, y_test, title='Model Evaluation'):
     # Get class labels
     class_labels = model.classes_
     
-    updated_title = "Correlation Matrix " + title
+    updated_title = title + " Correlation Matrix"
     # Plot confusion matrix
     fig = plot_confusion_matrix(class_labels, 
                                y_true=y_test, 
