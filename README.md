@@ -12,7 +12,7 @@ This learning series consists of three modules, each building upon the previous:
 To request a JupyterHub for using these modules in your classroom, contact the <a href="https://docs.google.com/forms/d/e/1FAIpQLSd6wxnQFYZpUzUQRMHbVC6yyCLKfiuYky4OdtAYLp6p6mJ_lg/viewform" target="blank">NSF Unidata Science Gateway</a> program. 
 
 ## In this repository
-#### 00_Startup
+#### 00_Startup (coming soon)
 - Instructor startup guide
 - Learner startup guide
 
