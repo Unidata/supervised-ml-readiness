@@ -76,10 +76,11 @@ def create_column_filter_widget(columns=column_list):
         grid = widgets.GridBox(
             children=list(section_checkboxes.values()),
             layout=widgets.Layout(
-                grid_template_columns='repeat(3, auto)',
-                grid_gap='5px',
-                width='80%',
-                padding='2px'
+                grid_template_columns='repeat(3, minmax(100px, 1fr))',
+                grid_gap='1px',
+                width='100%',
+                padding='2px',
+                overflow='hidden'
             )
         )
         
@@ -87,7 +88,7 @@ def create_column_filter_widget(columns=column_list):
         return widgets.VBox([
             widgets.HTML(value=f"<b>{title}</b>"),
             grid
-        ])
+        ], layout=widgets.Layout(width="80%"))
     
     # Create each section
     if columns_by_altitude['0_m']:
