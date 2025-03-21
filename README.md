@@ -1,3 +1,5 @@
+<img src="https://elearning.unidata.ucar.edu/dataeLearning/Cybertraining/media/lightbanner3.png"/>
+
 # Machine Learning in the Earth Systems Sciences
 
 This learning series is designed to guide you through the very basics of supervised machine learning in the Earth Systems Sciences. You will discover how machine learning is used by scientists, the process for supervised machine learning model development, how data plays a crucial role in making good predictions, and how to be an effective and ethical user of machine learning tools. You will also learn that machine learning is not a catch-all solution to every problem! 
@@ -32,6 +34,9 @@ To request a JupyterHub for using these modules in your classroom, contact the <
 - `analysis_tech.py`
   - read-only supporting technology, do not open for instruction
 
+Raw data and original size media available upon request. 
+
+<img src="https://elearning.unidata.ucar.edu/dataeLearning/Cybertraining/media/NSFUnidatalogo.png"/>
+
 This work was supported by NSF Unidata under award #2319979 from the US National Science Foundation. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
 
-Raw data and original size media available upon request. 
