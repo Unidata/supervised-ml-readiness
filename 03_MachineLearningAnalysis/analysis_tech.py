@@ -393,8 +393,11 @@ def create_station_selector():
     checkbox_grid = widgets.GridBox(
         children=[checkboxes[station] for station in STATIONS],
         layout=widgets.Layout(
-            grid_template_columns='repeat(3, auto)',
-            grid_gap='10px'
+            grid_template_columns='repeat(3, minmax(100px, 1fr))',
+            grid_gap='10px',
+            width='100%',
+            padding='2px',
+            overflow='hidden'
         )
     )
     
