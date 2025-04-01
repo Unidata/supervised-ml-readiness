@@ -1,4 +1,4 @@
-name: pyaos25s
+name: cybertraining-pilot
 channels:
  - conda-forge
 dependencies:
