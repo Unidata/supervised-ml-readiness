@@ -12,7 +12,7 @@ import ipywidgets as widgets
 # Machine learning
 from sklearn.base import BaseEstimator
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import root_mean_squared_error, r2_score
+from sklearn.metrics import root_mean_squared_error, r2_score, mean_squared_error
 from sklearn.multioutput import MultiOutputRegressor
 from xgboost import XGBRegressor
 
@@ -241,7 +241,7 @@ def display_correlation_plot_dashboard(base_url="https://elearning.unidata.ucar.
 def algorithm_selection():
     """Creates widget for algorithm selection and returns selected value via callback."""
     algorithm_options = {
-        "Multi-Linear Regressor": "linear_regression",
+        "Linear Regression": "linear_regression",
         "XGBoost": "xgboost"
     }
     
@@ -500,14 +500,15 @@ def filter_dataframe(df, prefix_values):
     
     return filtered_df
 
-def model_eval_MITC(
+def model_eval(
     model: BaseEstimator,
     X_test: pd.DataFrame,
-    y_test: pd.DataFrame,
+    y_test: pd.Series,
     eval_type: str = 'Validation'
 ) -> None:
     """
     Evaluates a trained model using test data and prints performance metrics for MITC.
+    Single-target version.
     """
     if eval_type not in ['Testing', 'Validation', None]:
         raise ValueError(f"eval_type must be one of ['Testing', 'Validation', None]")
@@ -516,27 +517,30 @@ def model_eval_MITC(
     header = f"{eval_type} Metrics" if eval_type else "Metrics"
 
     y_pred = model.predict(X_test)
-    rmse = root_mean_squared_error(y_test, y_pred, multioutput='raw_values')
-    r2 = r2_score(y_test, y_pred, multioutput='raw_values')
     
-    # Get stations from X_test that are in STATIONS list
-    used_stations = sorted(set(col.split('_')[0] for col in X_test.columns 
-                             if col.split('_')[0] in STATIONS))
+    # Handle potentially 2D output from some models
+    if len(np.array(y_pred).shape) > 1:
+        y_pred = y_pred.ravel()
+    
+    # Calculate metrics for single target
+    from sklearn.metrics import mean_squared_error
+    rmse_val = np.sqrt(mean_squared_error(y_test, y_pred))
+    r2_val = r2_score(y_test, y_pred)
+    
+    # Get target name
+    target_name = y_test.name if hasattr(y_test, 'name') and y_test.name else "target"
     
     print(header)
     print(f"\nModel Type: {type(model).__name__}")
-    print(f"\nStations used ({len(used_stations)}/{len(STATIONS)}):")
-    print(', '.join(used_stations))
     
-    print("\nRMSE for each target feature:")
-    for target, error in zip(y_test.columns, rmse):
-        print(f" {target}:\t{error:.4f}")
+    print("\nRMSE:")
+    print(f" {target_name}:\t{rmse_val:.4f}")
     
-    print("\nR² Score for each target feature:")
-    for target, score in zip(y_test.columns, r2):
-        print(f" {target}:\t{score:.4f}")
+    print("\nR² Score:")
+    print(f" {target_name}:\t{r2_val:.4f}")
     
-    print(f"\nAverage R² Score:\t{np.mean(r2):.2f}")
+    print(f"\nR² Score:\t{r2_val:.2f}")
+
 
 def display_discharge_dashboard(hydrograph_data):
     """Creates and displays interactive dashboard for multiple hydrograph stations."""
