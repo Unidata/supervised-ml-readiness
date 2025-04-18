@@ -22,15 +22,6 @@ from typing import Any
 from sklearn.base import BaseEstimator
 from sklearn.metrics import root_mean_squared_error, r2_score
 
-# Constants for configuration
-WEATHER_VARS = [
-    ('Temperature (F)', 'airtemp_degF'),
-    ('Average Wind Speed (mph)', 'windspeed_mph'),
-    ('Wind Gust (mph)', 'windgust_mph'),
-    ('Relative Humidity (%)', 'rh_percent'),
-    ('Precipitation (in)', 'precip_in')
-]
-
 STATIONS = ['BEAR', 'BURN', 'FRYI', 'JEFF', 'NCAT', 'SALI', 'SASS', 'UNCA', 'WINE']
 
 def create_ml_knowledgecheck():
@@ -89,40 +80,24 @@ def display_knowledgecheck():
     question, buttons, output = create_ml_knowledgecheck()
     display(question, buttons, output)
 
-def create_weather_visualization_controls():
-    """Creates control widgets for the Mt. Mitchell weather data visualization."""
-    # Variable dropdown
-    var_dropdown = widgets.Dropdown(
-        options=[
-            ('Temperature (F)', 'MITC_airtemp_degF'),
-            ('Average Wind Speed (mph)', 'MITC_windspeed_mph'),
-            ('Wind Gust (mph)', 'MITC_windgust_mph'),
-            ('Relative Humidity (%)', 'MITC_rh_percent'),
-            ('Precipitation (in)', 'MITC_precip_in')
-        ],
-        description='Variable:',
-        disabled=False
-    )
 
-    # Plot type dropdown
-    plot_dropdown = widgets.Dropdown(
-        options=['Histogram', 'Time Series'],
-        description='Plot type:',
-        disabled=False
-    )
-
-    # Button for plotting
-    plot_button = widgets.Button(description="Plot")
-    
-    # Output widget to render plots
-    output = widgets.Output()
-    
-    return var_dropdown, plot_dropdown, plot_button, output
-
-def display_mt_mitchell_weather_dashboard(weather_data):
-    """Creates and displays interactive dashboard for Mt. Mitchell weather data."""
+def display_golden_wier_dashboard(hydrograph_data):
+    """Creates and displays interactive dashboard for Golden Wier hydrograph data."""
     # Create interface controls
-    var_dropdown, plot_dropdown, plot_button, output = create_weather_visualization_controls()
+    plot_dropdown = widgets.Dropdown(
+        options=['Histogram', 'Annual Time Series', 'Yearly Comparison'],
+        value='Histogram',
+        description='Plot Type:',
+        disabled=False,
+    )
+    
+    plot_button = widgets.Button(
+        description='Generate Plot',
+        button_style='primary',
+        tooltip='Click to generate the plot',
+    )
+    
+    output = widgets.Output()
     
     def on_plot_button_click(b):
         with output:
@@ -130,58 +105,51 @@ def display_mt_mitchell_weather_dashboard(weather_data):
             
             if plot_dropdown.value == 'Histogram':
                 fig, ax = plt.subplots(1, 1, tight_layout=True)
-                ax.hist(weather_data[var_dropdown.value], bins=30, color='skyblue', edgecolor='black')
-                ax.set_title(f"Histogram of {var_dropdown.label} at Mt. Mitchell (MITC)", fontsize=14)
-                ax.set_xlabel(var_dropdown.label)
+                ax.hist(hydrograph_data['daily_mean_discharge_DT_GOLDEN'].dropna(), bins=30, 
+                       color='skyblue', edgecolor='black')
+                ax.set_title("Histogram of Daily Mean Discharge at Golden Wier", fontsize=14)
+                ax.set_xlabel("Daily Mean Discharge")
                 ax.set_ylabel("Number of records")
                 plt.show()
             
-            elif plot_dropdown.value == 'Time Series':
-                xdates = pd.to_datetime(weather_data['observation_datetime'])
+            elif plot_dropdown.value == 'Annual Time Series':
+                # Group by year and day of year for annual comparison
+                years = sorted(hydrograph_data['year'].unique())
+                fig, ax = plt.subplots(1, 1, figsize=(10, 6), tight_layout=True)
+                
+                for year in years:
+                    year_data = hydrograph_data[hydrograph_data['year'] == year]
+                    year_data = year_data.sort_values('day_of_year')
+                    ax.plot(year_data['day_of_year'], year_data['daily_mean_discharge_DT_GOLDEN'], 
+                           label=str(year))
+                
+                ax.set_title("Annual Comparison of Daily Mean Discharge at Golden Wier", fontsize=14)
+                ax.set_xlabel("Day of Year")
+                ax.set_ylabel("Daily Mean Discharge")
+                ax.legend(title="Year")
+                plt.show()
+                
+            elif plot_dropdown.value == 'Yearly Comparison':
+                # Calculate yearly averages
+                yearly_avg = hydrograph_data.groupby('year')['daily_mean_discharge_DT_GOLDEN'].mean().reset_index()
+                
                 fig, ax = plt.subplots(1, 1, tight_layout=True)
-                ax.plot(xdates[::100], weather_data[var_dropdown.value][::100], 
-                       label=var_dropdown.label, color='orange')
-                ax.set_title(f"Time Series of {var_dropdown.label} at Mt. Mitchell (MITC)", fontsize=14)
-                ax.set_xlabel("Date")
-                ax.set_ylabel(var_dropdown.label)
-                ax.xaxis.set_major_locator(mdates.YearLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+                ax.bar(yearly_avg['year'].astype(str), yearly_avg['daily_mean_discharge_DT_GOLDEN'], 
+                      color='green', edgecolor='black')
+                ax.set_title("Yearly Average Discharge at Golden Wier", fontsize=14)
+                ax.set_xlabel("Year")
+                ax.set_ylabel("Average Daily Mean Discharge")
+                plt.xticks(rotation=45)
                 plt.show()
     
     # Connect button to visualization update function
     plot_button.on_click(on_plot_button_click)
     
     # Display dashboard elements
-    display(widgets.HTML(value="<h3>Mt. Mitchell</h3>"), 
-           var_dropdown, 
+    display(widgets.HTML(value="<h3>Golden Wier Hydrograph Dashboard</h3>"), 
            plot_dropdown, 
            plot_button, 
            output)
-
-def create_input_station_controls():
-    """Creates control widgets for input stations data visualization."""
-    var_dropdown = widgets.Dropdown(
-        options=WEATHER_VARS,
-        description='Variable:',
-        disabled=False
-    )
-
-    plot_dropdown = widgets.Dropdown(
-        options=['Histogram', 'Time Series'],
-        description='Plot type:',
-        disabled=False
-    )
-
-    station_dropdown = widgets.Dropdown(
-        options=STATIONS,
-        description='Station:',
-        disabled=False
-    )
-
-    plot_button = widgets.Button(description="Plot")
-    output = widgets.Output()
-    
-    return station_dropdown, var_dropdown, plot_dropdown, plot_button, output
 
 def display_input_stations_dashboard(weather_data):
     """Creates and displays interactive dashboard for input stations weather data."""
@@ -269,76 +237,6 @@ def display_correlation_plot_dashboard(base_url="https://elearning.unidata.ucar.
     plot_button.on_click(update_image)
     display(title, var_dropdown, plot_button, output)
 
-def create_percentage_widget():
-    """Creates widget for specifying training/validation/testing splits."""
-    # Create text widgets for percentages
-    training = widgets.BoundedIntText(
-        value=0,
-        min=0,
-        max=100,
-        description='Training %:',
-        layout=widgets.Layout(width='200px')
-    )
-
-    validation = widgets.BoundedIntText(
-        value=0,
-        min=0,
-        max=100,
-        description='Validation %:',
-        layout=widgets.Layout(width='200px')
-    )
-
-    testing = widgets.BoundedIntText(
-        value=0,
-        min=0,
-        max=100,
-        description='Testing %:',
-        layout=widgets.Layout(width='200px')
-    )
-
-    submit_button = widgets.Button(description="Submit")
-    output = widgets.Output()
-    
-    def check_percentages(change=None):
-        with output:
-            output.clear_output()
-            total = training.value + validation.value + testing.value
-            print(f"Total: {total}%")
-                
-    def on_submit_clicked(b):
-        with output:
-            output.clear_output()
-            check_percentages()
-            total = training.value + validation.value + testing.value
-            print("✓ Submitted" if total == 100 else 
-                  "⚠️ Make sure the percentages sum to 100% and resubmit.")
-    
-    # Add observers
-    training.observe(check_percentages, names='value')
-    validation.observe(check_percentages, names='value')
-    testing.observe(check_percentages, names='value')
-    submit_button.on_click(on_submit_clicked)
-    
-    # Layout
-    widget_box = widgets.VBox([
-        widgets.HTML(value="<h3>Dataset Split Percentages</h3>"),
-        training,
-        validation,
-        testing,
-        output,
-        submit_button
-    ])
-    
-    display(widget_box)
-    
-    def get_decimal_values():
-        return {
-            'training': training.value / 100,
-            'validation': validation.value / 100,
-            'testing': testing.value / 100
-        }
-    
-    return widget_box, get_decimal_values
 
 def algorithm_selection():
     """Creates widget for algorithm selection and returns selected value via callback."""
@@ -378,6 +276,17 @@ def algorithm_selection():
         
     return get_selection
 
+# Extract station names from your dataframe columns
+STATIONS = [
+    'hourly_precip_mean_inch_0CO',
+    'hourly_precip_sum_inch_0CO',
+    'daily_mean_discharge_LEAV_GTOWN',
+    'daily_mean_discharge_WF_EMPIRE',
+    'daily_mean_discharge_MAIN_LAWSN',
+    'daily_mean_discharge_N_BLKHAWK',
+    'daily_mean_discharge_DT_GOLDEN'
+]
+
 def create_station_selector():
     """Creates grid of checkboxes for station selection."""
     checkboxes = {
@@ -393,7 +302,7 @@ def create_station_selector():
     checkbox_grid = widgets.GridBox(
         children=[checkboxes[station] for station in STATIONS],
         layout=widgets.Layout(
-            grid_template_columns='repeat(3, minmax(100px, 1fr))',
+            grid_template_columns='repeat(2, minmax(350px, 1fr))',
             grid_gap='10px',
             width='100%',
             padding='2px',
@@ -413,12 +322,13 @@ def create_station_selector():
         checkbox[1].observe(on_change, names='value')
     
     display(widgets.VBox([
-        widgets.HTML(value="<h3>Select Weather Stations</h3>"),
+        widgets.HTML(value="<h3>Select Weather and Stream Gauge Stations</h3>"),
         checkbox_grid,
         output
     ]))
     
     return checkboxes
+
 
 
 selected_model = None  # Global variable for model access
@@ -550,88 +460,68 @@ class MultiLinearRegressor(MultiOutputRegressor):
         print(f"\nTotal training completed in {total_time:.2f} seconds")
         return self
 
-def split_data_temporal(df, final_cutoff='2024-09-28', train_pct=0.6, val_pct=0.2, test_pct=0.2):
+def split_data_temporal(df, train_years, val_years, test_years, target_column, year_column='year'):
     """
-    Split data into training, validation, and testing sets based on chronological order.
-    The splits are created in this order: Training (earliest dates), Validation (middle dates),
-    Testing (latest dates before cutoff), and True Test (after cutoff)
+    Split data temporally based on specified years for time series forecasting.
     
     Parameters:
     -----------
     df : pandas DataFrame
-        Input DataFrame with a 'date' column
-    final_cutoff : str
-        Date string for the cutoff between validation and true test sets
-    train_pct : float
-        Percentage of pre-cutoff data to use for training (default: 0.6)
-    val_pct : float
-        Percentage of pre-cutoff data to use for validation (default: 0.2)
-    test_pct : float
-        Percentage of pre-cutoff data to use for testing (default: 0.2)
+        The dataframe containing your data with a year column
+    train_years : list
+        List of years to use for training (e.g., [2015, 2016, 2017, 2018, 2019])
+    val_years : list
+        List of years to use for validation (e.g., [2020, 2021])
+    test_years : list
+        List of years to use for testing
+    target_column : str
+        The name of the target variable column
+    year_column : str, default 'year'
+        The name of the column containing the year information
+        
+    Returns:
+    --------
+    X_train, y_train, X_val, y_val, X_test, y_test, X_true_test, y_true_test
     """
-    # Input validation
-    if not abs(train_pct + val_pct + test_pct - 1.0) < 1e-10:
-        raise ValueError("Training, validation, and testing percentages must sum to 1.0")
+    # Verify that the years exist in the dataset
+    available_years = set(df[year_column].unique())
+    for year in train_years + val_years + test_years:
+        if year not in available_years:
+            print(f"Warning: Year {year} not found in dataset")
     
-    # Convert dates to pandas datetime
-    final_cutoff = pd.to_datetime(final_cutoff)
+    # Create masks for each set
+    train_mask = df[year_column].isin(train_years)
+    val_mask = df[year_column].isin(val_years)
     
-    # Create mask for true test set
-    true_test_mask = df['date'] > final_cutoff
+    # Split test years in half for regular test and true test
+    if len(test_years) > 1:
+        split_idx = len(test_years) // 2
+        regular_test_years = test_years[:split_idx]
+        true_test_years = test_years[split_idx:]
+    else:
+        regular_test_years = test_years
+        true_test_years = test_years  # Same as regular test in this case
     
-    # Get the remaining data (everything up to final_cutoff)
-    remaining_data = df[~true_test_mask].copy()
-    remaining_data = remaining_data.sort_values('date')
+    test_mask = df[year_column].isin(regular_test_years)
+    true_test_mask = df[year_column].isin(true_test_years)
     
-    # Calculate the split points based on percentages
-    n_samples = len(remaining_data)
-    train_end_idx = int(n_samples * train_pct)
-    val_end_idx = int(n_samples * (train_pct + val_pct))  # Changed from test_end_idx
+    # Get feature columns (all columns except target)
+    X_columns = [col for col in df.columns if col != target_column]
     
-    # Get the dates at these split points
-    train_cutoff = remaining_data.iloc[train_end_idx]['date']
-    val_cutoff = remaining_data.iloc[val_end_idx]['date']  # Changed from test_cutoff
+    # Create the splits
+    X_train = df.loc[train_mask, X_columns]
+    y_train = df.loc[train_mask, target_column]
     
-    # Create masks for each period in chronological order
-    train_mask = df['date'] <= train_cutoff
-    val_mask = (df['date'] > train_cutoff) & (df['date'] <= val_cutoff)  # Middle period
-    test_mask = (df['date'] > val_cutoff) & (df['date'] <= final_cutoff)  # Latest period before final cutoff
+    X_val = df.loc[val_mask, X_columns]
+    y_val = df.loc[val_mask, target_column]
     
-    # Split the data
-    # Exclude observation_datetime, year_index, and date from features
-    X_cols = [col for col in df.columns 
-              if 'MITC' not in col 
-              and col not in ['observation_datetime', 'year_index', 'date']]
-    y_cols = [col for col in df.columns if 'MITC' in col]
+    X_test = df.loc[test_mask, X_columns]
+    y_test = df.loc[test_mask, target_column]
     
-    # Create the splits in chronological order
-    X_train = df.loc[train_mask, X_cols]
-    y_train = df.loc[train_mask, y_cols]
+    X_true_test = df.loc[true_test_mask, X_columns]
+    y_true_test = df.loc[true_test_mask, target_column]
     
-    X_val = df.loc[val_mask, X_cols]
-    y_val = df.loc[val_mask, y_cols]
-    
-    X_test = df.loc[test_mask, X_cols]
-    y_test = df.loc[test_mask, y_cols]
-    
-    X_true_test = df.loc[true_test_mask, X_cols]
-    y_true_test = df.loc[true_test_mask, y_cols]
-    
-    # Print summary statistics in chronological order
-    print("Data split summary:")
-    print(f"Training period: {df.loc[train_mask, 'date'].min()} to {df.loc[train_mask, 'date'].max()}")
-    print(f"Training samples: {len(X_train)} ({len(X_train)/len(remaining_data):.1%} of pre-cutoff data)")
-    
-    print(f"\nValidation period: {df.loc[val_mask, 'date'].min()} to {df.loc[val_mask, 'date'].max()}")
-    print(f"Validation samples: {len(X_val)} ({len(X_val)/len(remaining_data):.1%} of pre-cutoff data)")
-    
-    print(f"\nTesting period: {df.loc[test_mask, 'date'].min()} to {df.loc[test_mask, 'date'].max()}")
-    print(f"Testing samples: {len(X_test)} ({len(X_test)/len(remaining_data):.1%} of pre-cutoff data)")
-    
-    print(f"\nTrue test period: {df.loc[true_test_mask, 'date'].min()} to {df.loc[true_test_mask, 'date'].max()}")
-    print(f"True test samples: {len(X_true_test)}")
-    
-    return (X_train, y_train, X_val, y_val, X_test, y_test, X_true_test, y_true_test)
+    return X_train, y_train, X_val, y_val, X_test, y_test, X_true_test, y_true_test
 
 def filter_dataframe(df, prefix_values):
     """
@@ -701,40 +591,329 @@ def model_eval_MITC(
     
     print(f"\nAverage R² Score:\t{np.mean(r2):.2f}")
 
-def plot_weather_comparison(df, y_pred, transition_date, vars_config=WEATHER_VARS, title='MITC Weather Variables 2024'):
-    """Plot historical vs predicted weather variables."""
-    fig, axs = plt.subplots(len(vars_config), 1, figsize=(15, 12), sharex=True)
-    fig.subplots_adjust(hspace=0.1)
-
-    pred_dates = pd.date_range(start=transition_date, periods=len(y_pred), freq='h')
-    pred_dates_num = mdates.date2num(pred_dates)
-
-    for i, ((label, var), ax) in enumerate(zip(vars_config, axs)):
-        var_name = f'MITC_{var}'
-        mask = df[var_name].notna()
-        historical_dates = mdates.date2num(np.array(df.loc[mask, 'observation_datetime']))
-        historical_values = df.loc[mask, var_name].values
-        
-        ax.plot(historical_dates, historical_values, color='#77aadd', alpha=1.0, label='Historical')
-        ax.plot(pred_dates_num, y_pred[:, i], color='#ee8866', alpha=0.7, label='Predicted')
-        ax.axvline(x=mdates.date2num(transition_date), color='red', linestyle='-', alpha=0.8,
-                  label='Day MITC went Offline' if i == 0 else "")
-        
-        ax.set_ylabel(label)
-        ax.grid(True, alpha=0.3)
-        if i == 0:
-            ax.legend(loc='upper right')
-
-    for ax in axs:
-        ax.xaxis.set_major_locator(mdates.MonthLocator(bymonthday=-1))
-        ax.xaxis.set_minor_locator(mdates.MonthLocator(bymonthday=15))
-        ax.xaxis.set_major_formatter(plt.NullFormatter())
-        ax.xaxis.set_minor_formatter(mdates.DateFormatter('%b'))
-
-    plt.setp(axs[-1].xaxis.get_minorticklabels(), rotation=0)
-    plt.xlim(mdates.date2num(pd.Timestamp('2024-01-01')), 
-            mdates.date2num(pd.Timestamp('2024-12-31')))
-    plt.suptitle(title, y=1, fontsize=16)
-    plt.tight_layout()
+def display_discharge_dashboard(hydrograph_data):
+    """Creates and displays interactive dashboard for multiple hydrograph stations."""
     
-    return fig, axs
+    # Define the discharge columns (excluding Golden Wier)
+    discharge_columns = [col for col in hydrograph_data.columns 
+                         if 'daily_mean_discharge' in col and 'GOLDEN' not in col]
+    
+    # Create more descriptive location names
+    location_names = {
+        'daily_mean_discharge_LEAV_GTOWN': 'Georgetown',
+        'daily_mean_discharge_WF_EMPIRE': 'West Fork at Empire',
+        'daily_mean_discharge_MAIN_LAWSN': 'Lawson',
+        'daily_mean_discharge_N_BLKHAWK': 'North Clear Creek at Blackhawk'
+    }
+    
+    # Create interface controls
+    location_dropdown = widgets.Dropdown(
+        options=[(location_names.get(col, col), col) for col in discharge_columns],
+        description='Location:',
+        disabled=False,
+    )
+    
+    # Set default value after creating options
+    if len(discharge_columns) > 0:
+        location_dropdown.value = discharge_columns[0]
+    
+    plot_dropdown = widgets.Dropdown(
+        options=['Histogram', 'Annual Time Series', 'Yearly Comparison'],
+        value='Histogram',
+        description='Plot Type:',
+        disabled=False,
+    )
+    
+    plot_button = widgets.Button(
+        description='Generate Plot',
+        button_style='primary',
+        tooltip='Click to generate the plot',
+    )
+    
+    output = widgets.Output()
+    
+    def on_plot_button_click(b):
+        with output:
+            clear_output(wait=True)
+            
+            if not discharge_columns:
+                print("No discharge columns found in the dataset (excluding Golden).")
+                return
+                
+            selected_column = location_dropdown.value
+            # Get the location name directly from the dictionary
+            location_name = location_names.get(selected_column, selected_column)
+            
+            if plot_dropdown.value == 'Histogram':
+                fig, ax = plt.subplots(1, 1, tight_layout=True)
+                data_to_plot = hydrograph_data[selected_column].dropna()
+                if len(data_to_plot) == 0:
+                    print(f"No data available for {location_name}")
+                    return
+                ax.hist(data_to_plot, bins=30, color='skyblue', edgecolor='black')
+                ax.set_title(f"Histogram of Daily Mean Discharge at {location_name}", fontsize=14)
+                ax.set_xlabel("Daily Mean Discharge")
+                ax.set_ylabel("Number of records")
+                plt.show()
+            
+            elif plot_dropdown.value == 'Annual Time Series':
+                # Ensure required columns exist
+                if 'year' not in hydrograph_data.columns or 'day_of_year' not in hydrograph_data.columns:
+                    print("Error: Data missing 'year' or 'day_of_year' columns needed for this plot")
+                    return
+                
+                # Group by year and day of year for annual comparison
+                years = sorted(hydrograph_data['year'].unique())
+                if len(years) == 0:
+                    print("No year data available for plotting")
+                    return
+                    
+                fig, ax = plt.subplots(1, 1, figsize=(10, 6), tight_layout=True)
+                
+                for year in years:
+                    year_data = hydrograph_data[hydrograph_data['year'] == year]
+                    if len(year_data) == 0:
+                        continue
+                    year_data = year_data.sort_values('day_of_year')
+                    # Only plot if we have data
+                    if not year_data[selected_column].isna().all():
+                        ax.plot(year_data['day_of_year'], year_data[selected_column], 
+                               label=str(year))
+                
+                ax.set_title(f"Annual Comparison of Daily Mean Discharge at {location_name}", fontsize=14)
+                ax.set_xlabel("Day of Year")
+                ax.set_ylabel("Daily Mean Discharge")
+                ax.legend(title="Year")
+                plt.show()
+                
+            elif plot_dropdown.value == 'Yearly Comparison':
+                # Ensure required column exists
+                if 'year' not in hydrograph_data.columns:
+                    print("Error: Data missing 'year' column needed for this plot")
+                    return
+                
+                # Calculate yearly averages
+                yearly_avg = hydrograph_data.groupby('year')[selected_column].mean().reset_index()
+                
+                if len(yearly_avg) == 0:
+                    print("No data available for yearly comparison")
+                    return
+                    
+                fig, ax = plt.subplots(1, 1, tight_layout=True)
+                ax.bar(yearly_avg['year'].astype(str), yearly_avg[selected_column], 
+                      color='green', edgecolor='black')
+                ax.set_title(f"Yearly Average Discharge at {location_name}", fontsize=14)
+                ax.set_xlabel("Year")
+                ax.set_ylabel("Average Daily Mean Discharge")
+                plt.xticks(rotation=45)
+                plt.show()
+    
+    # Connect button to visualization update function
+    plot_button.on_click(on_plot_button_click)
+    
+    # Display dashboard elements
+    display(widgets.HTML(value="<h3>Hydrograph Stations Dashboard</h3>"), 
+           location_dropdown,
+           plot_dropdown, 
+           plot_button, 
+           output)
+
+
+def year_selection_widget(auto_display=True):
+    """Creates widget for specifying training/validation/testing splits allowing multiple years per category.
+    
+    Returns:
+        widget_box: The widget interface
+        get_selection: A function that returns the current selection as integers
+    """
+    # Predefined years
+    years = np.array([2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023])
+    
+    # Convert years to list of strings for the checkboxes
+    year_options = [str(year) for year in years]
+    
+    # Create section headers with larger font
+    header_style = "font-size: 16px; font-weight: bold; margin-bottom: 5px;"
+    training_header = widgets.HTML(value=f"<span style='{header_style}'>Training Years:</span>")
+    validation_header = widgets.HTML(value=f"<span style='{header_style}'>Validation Years:</span>")
+    testing_header = widgets.HTML(value=f"<span style='{header_style}'>Testing Years:</span>")
+    
+    # Custom CSS for checkbox labels to increase font size and reduce spacing
+    checkbox_style = """
+    <style>
+    .widget-checkbox {
+        margin-right: -10px !important;  /* Less aggressive spacing reduction */
+        width: auto !important;
+    }
+    .widget-checkbox > label {
+        font-size: 14px !important;  /* Increase font size by ~1 from default */
+        padding-right: 15px !important; /* More padding to the right for better readability */
+    }
+    /* Add some padding to the checkbox containers to prevent clipping */
+    .widget-hbox {
+        padding-right: 15px !important;
+    }
+    </style>
+    """
+    style_widget = widgets.HTML(value=checkbox_style)
+    
+    # Create checkbox widgets for each year for each category
+    training_checkboxes = [widgets.Checkbox(value=False, description=str(year), indent=False) 
+                          for year in years]
+    validation_checkboxes = [widgets.Checkbox(value=False, description=str(year), indent=False) 
+                            for year in years]
+    testing_checkboxes = [widgets.Checkbox(value=False, description=str(year), indent=False) 
+                         for year in years]
+    
+    # Create horizontal box layouts for each set of checkboxes with reduced spacing
+    box_layout = widgets.Layout(margin='0px 0px 0px 0px', padding='0px 0px 0px 0px')
+    training_box = widgets.HBox(training_checkboxes, layout=box_layout)
+    validation_box = widgets.HBox(validation_checkboxes, layout=box_layout)
+    testing_box = widgets.HBox(testing_checkboxes, layout=box_layout)
+    
+    submit_button = widgets.Button(
+        description="Submit",
+        button_style='primary',
+        layout=widgets.Layout(width='150px', margin='10px 0px 10px 0px')
+    )
+    
+    warning_output = widgets.HTML(value="")
+    selection_display = widgets.HTML(value="", layout=widgets.Layout(margin='10px 0px 10px 0px'))
+    result_output = widgets.Output()
+    
+    # Store the selection state
+    selection_state = {'submitted': False, 'values': None}
+    
+    # Function to get selected years for each category
+    def get_selected_years():
+        training_years = [int(cb.description) for cb in training_checkboxes if cb.value]
+        validation_years = [int(cb.description) for cb in validation_checkboxes if cb.value]
+        testing_years = [int(cb.description) for cb in testing_checkboxes if cb.value]
+        
+        return {
+            'training': training_years,
+            'validation': validation_years,
+            'testing': testing_years
+        }
+    
+    # Function to check for overlaps and missing selections
+    def check_selections():
+        selected = get_selected_years()
+        
+        # Check if any selections are made
+        has_training = len(selected['training']) > 0
+        has_validation = len(selected['validation']) > 0
+        has_testing = len(selected['testing']) > 0
+        
+        missing = []
+        if not has_training:
+            missing.append("Training")
+        if not has_validation:
+            missing.append("Validation")
+        if not has_testing:
+            missing.append("Testing")
+        
+        # Check for overlaps
+        training_set = set(selected['training'])
+        validation_set = set(selected['validation'])
+        testing_set = set(selected['testing'])
+        
+        overlaps = []
+        
+        train_val_overlap = training_set.intersection(validation_set)
+        if train_val_overlap:
+            overlaps.append(f"Training and Validation overlap on years: {', '.join(map(str, train_val_overlap))}")
+            
+        train_test_overlap = training_set.intersection(testing_set)
+        if train_test_overlap:
+            overlaps.append(f"Training and Testing overlap on years: {', '.join(map(str, train_test_overlap))}")
+            
+        val_test_overlap = validation_set.intersection(testing_set)
+        if val_test_overlap:
+            overlaps.append(f"Validation and Testing overlap on years: {', '.join(map(str, val_test_overlap))}")
+        
+        # Generate warning messages
+        warning_html = ""
+        if missing:
+            warning_html += f"<span style='color:orange; font-size:14px;'>⚠️ Please select at least one year for: {', '.join(missing)}</span><br>"
+            
+        if overlaps:
+            warning_html += "<span style='color:red; font-size:14px;'>⚠️ Years cannot be used in multiple categories:</span><br>"
+            for overlap in overlaps:
+                warning_html += f"<span style='color:red; font-size:14px;'>- {overlap}</span><br>"
+            
+        # Update the warning display
+        warning_output.value = warning_html
+        
+        return len(missing) == 0 and len(overlaps) == 0
+    
+    # Function to update the selection display
+    def update_display(change=None):
+        selected = get_selected_years()
+        
+        # Format the display content with larger font
+        display_html = "<div style='font-size:15px;'>"
+        display_html += "<b>Current Selection:</b><br>"
+        display_html += f"<b>Training:</b> {', '.join(map(str, selected['training'])) if selected['training'] else 'None'}<br>"
+        display_html += f"<b>Validation:</b> {', '.join(map(str, selected['validation'])) if selected['validation'] else 'None'}<br>"
+        display_html += f"<b>Testing:</b> {', '.join(map(str, selected['testing'])) if selected['testing'] else 'None'}"
+        display_html += "</div>"
+        
+        # Update the selection display
+        selection_display.value = display_html
+        
+        # Check for warnings
+        check_selections()
+    
+    # Register observers for all checkboxes
+    for cb in training_checkboxes + validation_checkboxes + testing_checkboxes:
+        cb.observe(update_display, names='value')
+    
+    def on_submit_clicked(b):
+        valid = check_selections()
+        selected = get_selected_years()
+        
+        with result_output:
+            result_output.clear_output()
+            if valid:
+                # Store the selection
+                selection_state['submitted'] = True
+                selection_state['values'] = selected
+                
+                print(f"✓ Submitted successfully!")
+                print(f"- Training years: {', '.join(map(str, selected['training']))}")
+                print(f"- Validation years: {', '.join(map(str, selected['validation']))}")
+                print(f"- Testing years: {', '.join(map(str, selected['testing']))}")
+            else:
+                selection_state['submitted'] = False
+                selection_state['values'] = None
+                print("⚠️ Please fix the errors before submitting.")
+    
+    submit_button.on_click(on_submit_clicked)
+    
+    # Function to get the current selection
+    def get_selection():
+        if selection_state['submitted']:
+            return selection_state['values']
+        else:
+            return None
+    
+    # Create layout
+    widget_box = widgets.VBox([
+        style_widget,
+        training_header, training_box,
+        validation_header, validation_box,
+        testing_header, testing_box,
+        selection_display,
+        warning_output,
+        submit_button, 
+        result_output
+    ])
+    
+    # Initial display update
+    update_display()
+    
+    if auto_display:
+        display(widget_box)
+        
+    return widget_box, get_selection
