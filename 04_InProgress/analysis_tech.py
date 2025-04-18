@@ -283,8 +283,7 @@ STATIONS = [
     'daily_mean_discharge_LEAV_GTOWN',
     'daily_mean_discharge_WF_EMPIRE',
     'daily_mean_discharge_MAIN_LAWSN',
-    'daily_mean_discharge_N_BLKHAWK',
-    'daily_mean_discharge_DT_GOLDEN'
+    'daily_mean_discharge_N_BLKHAWK'
 ]
 
 def create_station_selector():
@@ -354,12 +353,12 @@ def train_button(selected_algo, X_train_filtered, y_train):
             try:
                 if selected_algo == "xgboost":
                     print("Running XGBoost model...")
-                    base_model = XGBRegressor(
+                    # Use regular XGBRegressor instead of MultiXGBRegressor
+                    selected_model = XGBRegressor(
                         n_estimators=100,
                         tree_method='hist',
                         random_state=42
                     )
-                    selected_model = MultiXGBRegressor(base_model)
                     selected_model.fit(X_train_filtered, y_train)
                     print("XGBoost model training completed!")
                     print(f"Model object created and trained: {selected_model is not None}")
@@ -367,7 +366,8 @@ def train_button(selected_algo, X_train_filtered, y_train):
                     
                 elif selected_algo == "linear_regression":
                     print("Running Linear Regression model...")
-                    selected_model = MultiLinearRegressor()
+                    # For single target, use regular LinearRegression
+                    selected_model = LinearRegression()
                     selected_model.fit(X_train_filtered, y_train)
                     print("Linear Regression training completed!")
                     print(f"Model object created and trained: {selected_model is not None}")
@@ -404,61 +404,6 @@ def train_button(selected_algo, X_train_filtered, y_train):
 
     return get_model  # Return the function instead of the model directly
 
-## Data
-
-class MultiXGBRegressor(MultiOutputRegressor):
-    def __init__(self, estimator):
-        super().__init__(estimator)
-        self.estimators_ = []
-
-    def fit(self, X, y):
-        start_time = time.time()
-        print("\nStarting Multi-Target XGBoost Training Process...")
-        y_np = y.values if hasattr(y, 'values') else np.array(y)
-        n_outputs = y_np.shape[1]
-        target_names = y.columns if hasattr(y, 'columns') else [f"target_{i}" for i in range(n_outputs)]
-        
-        self.estimators_ = [
-            XGBRegressor(**{k: v for k, v in self.estimator.get_params().items() 
-                          if k != 'verbose'}) 
-            for _ in range(n_outputs)
-        ]
-        
-        for i, (est, target) in enumerate(zip(self.estimators_, target_names)):
-            target_start = time.time()
-            print(f"\nTraining target {i+1}/{n_outputs}: {target}", flush=True)
-            est.fit(X, y_np[:, i], verbose=False)
-            target_time = time.time() - target_start
-            print(f"Target completed in {target_time:.2f} seconds", flush=True)
-
-        total_time = time.time() - start_time
-        print(f"\nTotal training completed in {total_time:.2f} seconds")
-        return self
-
-class MultiLinearRegressor(MultiOutputRegressor):
-    def __init__(self):
-        super().__init__(LinearRegression())
-        self.estimators_ = []
-
-    def fit(self, X, y):
-        start_time = time.time()
-        print("\nStarting Multi-Target Linear Regression Training...")
-        y_np = y.values if hasattr(y, 'values') else np.array(y)
-        n_outputs = y_np.shape[1]
-        target_names = y.columns if hasattr(y, 'columns') else [f"target_{i}" for i in range(n_outputs)]
-        
-        self.estimators_ = [LinearRegression() for _ in range(n_outputs)]
-        
-        for i, (est, target) in enumerate(zip(self.estimators_, target_names)):
-            target_start = time.time()
-            print(f"\nTraining target {i+1}/{n_outputs}: {target}", flush=True)
-            est.fit(X, y_np[:, i])
-            target_time = time.time() - target_start
-            print(f"Target completed in {target_time:.2f} seconds", flush=True)
-
-        total_time = time.time() - start_time
-        print(f"\nTotal training completed in {total_time:.2f} seconds")
-        return self
 
 def split_data_temporal(df, train_years, val_years, test_years, target_column, year_column='year'):
     """
@@ -525,7 +470,8 @@ def split_data_temporal(df, train_years, val_years, test_years, target_column, y
 
 def filter_dataframe(df, prefix_values):
     """
-    Filter DataFrame to keep only columns with specified prefixes plus day_index and hour_index.
+    Filter DataFrame to keep only columns with specified prefixes plus year, day of year, 
+    and hour of day columns if they exist.
     
     Parameters:
     df (pandas.DataFrame): Input DataFrame
@@ -537,8 +483,9 @@ def filter_dataframe(df, prefix_values):
     # Print original column count
     print(f"Original DataFrame: {len(df.columns)} columns")
     
-    # Start with day_index and hour_index
-    columns_to_keep = ['day_index', 'hour_index']
+    # Start with time-related columns if they exist
+    time_columns = ['year', 'day_of_year', 'hour_of_day']
+    columns_to_keep = [col for col in time_columns if col in df.columns]
     
     # Add any column that starts with our prefix values
     for prefix in prefix_values:
