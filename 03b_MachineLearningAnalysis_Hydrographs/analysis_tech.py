@@ -430,7 +430,7 @@ def split_data_temporal(df, train_years, val_years, test_years, target_column, y
         
     Returns:
     --------
-    X_train, y_train, X_val, y_val, X_test, y_test, X_true_test, y_true_test
+    X_train, y_train, X_val, y_val, X_test, y_test
     """
     # Verify that the years exist in the dataset
     available_years = set(df[year_column].unique())
@@ -441,18 +441,7 @@ def split_data_temporal(df, train_years, val_years, test_years, target_column, y
     # Create masks for each set
     train_mask = df[year_column].isin(train_years)
     val_mask = df[year_column].isin(val_years)
-    
-    # Split test years in half for regular test and true test
-    if len(test_years) > 1:
-        split_idx = len(test_years) // 2
-        regular_test_years = test_years[:split_idx]
-        true_test_years = test_years[split_idx:]
-    else:
-        regular_test_years = test_years
-        true_test_years = test_years  # Same as regular test in this case
-    
-    test_mask = df[year_column].isin(regular_test_years)
-    true_test_mask = df[year_column].isin(true_test_years)
+    test_mask = df[year_column].isin(test_years)
     
     # Get feature columns (all columns except target)
     X_columns = [col for col in df.columns if col != target_column]
@@ -467,10 +456,7 @@ def split_data_temporal(df, train_years, val_years, test_years, target_column, y
     X_test = df.loc[test_mask, X_columns]
     y_test = df.loc[test_mask, target_column]
     
-    X_true_test = df.loc[true_test_mask, X_columns]
-    y_true_test = df.loc[true_test_mask, target_column]
-    
-    return X_train, y_train, X_val, y_val, X_test, y_test, X_true_test, y_true_test
+    return X_train, y_train, X_val, y_val, X_test, y_test
 
 def filter_dataframe(df, prefix_values):
     """
