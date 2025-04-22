@@ -551,16 +551,15 @@ def model_eval(
 def display_discharge_dashboard(hydrograph_data):
     """Creates and displays interactive dashboard for multiple hydrograph stations."""
     
-    # Define the discharge columns (excluding Golden Wier)
     discharge_columns = [col for col in hydrograph_data.columns 
-                         if 'daily_mean_discharge' in col and 'GOLDEN' not in col]
+                         if 'daily_mean_discharge' in col and 'BLKHAWK' not in col]
     
     # Create more descriptive location names
     location_names = {
         'daily_mean_discharge_LEAV_GTOWN': 'Georgetown',
         'daily_mean_discharge_WF_EMPIRE': 'West Fork at Empire',
         'daily_mean_discharge_MAIN_LAWSN': 'Lawson',
-        'daily_mean_discharge_N_BLKHAWK': 'North Clear Creek at Blackhawk'
+        'daily_mean_discharge_DT_GOLDEN': 'Downtown Golden'
     }
     
     # Create interface controls
