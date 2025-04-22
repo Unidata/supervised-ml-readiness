@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Tuple, Callable
 
 # Visualization
 import matplotlib.pyplot as plt
+import seaborn as sns
 import matplotlib.dates as mdates
 from IPython.display import display, HTML, clear_output
 import ipywidgets as widgets
@@ -81,8 +82,8 @@ def display_knowledgecheck():
     display(question, buttons, output)
 
 
-def display_golden_wier_dashboard(hydrograph_data):
-    """Creates and displays interactive dashboard for Golden Wier hydrograph data."""
+def display_blackhawk_gauge_dashboard(hydrograph_data):
+    """Creates and displays interactive dashboard for Blackhawk Gauge hydrograph data."""
     # Create interface controls
     plot_dropdown = widgets.Dropdown(
         options=['Histogram', 'Annual Time Series', 'Yearly Comparison'],
@@ -105,9 +106,9 @@ def display_golden_wier_dashboard(hydrograph_data):
             
             if plot_dropdown.value == 'Histogram':
                 fig, ax = plt.subplots(1, 1, tight_layout=True)
-                ax.hist(hydrograph_data['daily_mean_discharge_DT_GOLDEN'].dropna(), bins=30, 
+                ax.hist(hydrograph_data['daily_mean_discharge_N_BLKHAWK'].dropna(), bins=30, 
                        color='skyblue', edgecolor='black')
-                ax.set_title("Histogram of Daily Mean Discharge at Golden Wier", fontsize=14)
+                ax.set_title("Histogram of Daily Mean Discharge at Blackhawk Gauge", fontsize=14)
                 ax.set_xlabel("Daily Mean Discharge")
                 ax.set_ylabel("Number of records")
                 plt.show()
@@ -120,10 +121,10 @@ def display_golden_wier_dashboard(hydrograph_data):
                 for year in years:
                     year_data = hydrograph_data[hydrograph_data['year'] == year]
                     year_data = year_data.sort_values('day_of_year')
-                    ax.plot(year_data['day_of_year'], year_data['daily_mean_discharge_DT_GOLDEN'], 
+                    ax.plot(year_data['day_of_year'], year_data['daily_mean_discharge_N_BLKHAWK'], 
                            label=str(year))
                 
-                ax.set_title("Annual Comparison of Daily Mean Discharge at Golden Wier", fontsize=14)
+                ax.set_title("Annual Comparison of Daily Mean Discharge at Blackhawk Gauge", fontsize=14)
                 ax.set_xlabel("Day of Year")
                 ax.set_ylabel("Daily Mean Discharge")
                 ax.legend(title="Year")
@@ -131,12 +132,12 @@ def display_golden_wier_dashboard(hydrograph_data):
                 
             elif plot_dropdown.value == 'Yearly Comparison':
                 # Calculate yearly averages
-                yearly_avg = hydrograph_data.groupby('year')['daily_mean_discharge_DT_GOLDEN'].mean().reset_index()
+                yearly_avg = hydrograph_data.groupby('year')['daily_mean_discharge_N_BLKHAWK'].mean().reset_index()
                 
                 fig, ax = plt.subplots(1, 1, tight_layout=True)
-                ax.bar(yearly_avg['year'].astype(str), yearly_avg['daily_mean_discharge_DT_GOLDEN'], 
+                ax.bar(yearly_avg['year'].astype(str), yearly_avg['daily_mean_discharge_N_BLKHAWK'], 
                       color='green', edgecolor='black')
-                ax.set_title("Yearly Average Discharge at Golden Wier", fontsize=14)
+                ax.set_title("Yearly Average Discharge at Blackhawk Gauge", fontsize=14)
                 ax.set_xlabel("Year")
                 ax.set_ylabel("Average Daily Mean Discharge")
                 plt.xticks(rotation=45)
@@ -146,7 +147,7 @@ def display_golden_wier_dashboard(hydrograph_data):
     plot_button.on_click(on_plot_button_click)
     
     # Display dashboard elements
-    display(widgets.HTML(value="<h3>Golden Wier Hydrograph Dashboard</h3>"), 
+    display(widgets.HTML(value="<h3>Blackhawk Gauge Hydrograph Dashboard</h3>"), 
            plot_dropdown, 
            plot_button, 
            output)
@@ -194,48 +195,53 @@ def display_input_stations_dashboard(weather_data):
            plot_button, 
            output)
 
-def create_correlation_plot_controls():
-    """Creates control widgets for correlation plots."""
-    # Add title label with larger size and bold styling
-    title = widgets.HTML(value='<h3 style="font-weight: bold; margin: 0; padding: 0;">Comparison Plot</h3>')
+def discharge_pairplot(df, prefix='daily_mean_discharge', sample_size=1000, 
+                             random_state=42, figsize=(9, 9), dpi=350):
+    """
+    Create a pairplot of columns that start with a specific prefix.
     
-    var_dropdown = widgets.Dropdown(
-        options=[
-            ('Temperature (F)', 'airtemp_degF'),
-            ('Precipitation (in)', 'precip_in'),
-            ('Relative Humidity (%)', 'rh_percent'),
-            ('Wind Gust (mph)', 'windgust_mph'),
-            ('Average Wind Speed (mph)', 'windspeed_mph')
-        ],
-        description='Variable:',
-        disabled=False
-    )
-
-    plot_button = widgets.Button(description="Plot")
-    output = widgets.Output()
+    Parameters:
+    -----------
+    df : pandas DataFrame
+        The dataframe containing the data.
+    prefix : str, optional
+        The prefix to filter columns by. Default is 'daily_mean_discharge'.
+    sample_size : int, optional
+        Number of random rows to sample. Default is 1000.
+    random_state : int, optional
+        Random seed for reproducibility. Default is 42.
+    figsize : tuple, optional
+        Size of the figure in inches (width, height). Default is (5, 5).
+    dpi : int, optional
+        Resolution of the figure in dots per inch. Default is 400.
     
-    return title, var_dropdown, plot_button, output
-
-
-def display_correlation_plot_dashboard(base_url="https://elearning.unidata.ucar.edu/dataeLearning/Cybertraining/analysis/media/pairplot_"):
-    """Creates and displays interactive dashboard for correlation plots."""
-    # Create interface controls
-    title, var_dropdown, plot_button, output = create_correlation_plot_controls()
+    Returns:
+    --------
+    matplotlib.figure.Figure
+        The pairplot figure object.
+    """
+    # Sample random rows
+    sample_df = df.sample(n=sample_size, random_state=random_state)
     
-    def update_image(_):
-        selected_var = var_dropdown.value
-        image_url = f"{base_url}{selected_var}.png"
-        
-        with output:
-            output.clear_output(wait=True)
-            display(HTML(
-                f'<center><i>Click to enlarge</i><br>'
-                f'<a href="{image_url}" target="blank">'
-                f'<img src="{image_url}" width="600px"></a></center>'
-            ))
+    # Select columns that start with the prefix
+    columns_to_plot = [col for col in sample_df.columns if col.startswith(prefix)]
     
-    plot_button.on_click(update_image)
-    display(title, var_dropdown, plot_button, output)
+    # Create a copy with renamed columns
+    plot_df = sample_df[columns_to_plot].copy()
+    
+    # Rename columns to remove the prefix
+    plot_df.columns = [col.replace(f'{prefix}_', '') for col in plot_df.columns]
+    
+    # Close any existing figures to prevent the empty figure
+    plt.close('all')
+    
+    # Create the pairplot
+    g = sns.pairplot(plot_df, kind="scatter", diag_kind="kde", 
+                    plot_kws={'alpha': 0.3}, height=figsize[0]/len(columns_to_plot))
+    plt.tight_layout()
+    
+    # Return the plot without displaying it
+    return g
 
 
 def algorithm_selection():
