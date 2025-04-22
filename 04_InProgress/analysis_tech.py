@@ -23,8 +23,6 @@ from typing import Any
 from sklearn.base import BaseEstimator
 from sklearn.metrics import root_mean_squared_error, r2_score
 
-STATIONS = ['BEAR', 'BURN', 'FRYI', 'JEFF', 'NCAT', 'SALI', 'SASS', 'UNCA', 'WINE']
-
 def create_ml_knowledgecheck():
     """
     Creates an interactive knowledge check about ML concepts with two buttons and feedback.
@@ -289,11 +287,11 @@ STATIONS = [
     'daily_mean_discharge_LEAV_GTOWN',
     'daily_mean_discharge_WF_EMPIRE',
     'daily_mean_discharge_MAIN_LAWSN',
-    'daily_mean_discharge_N_BLKHAWK'
+    'daily_mean_discharge_DT_GOLDEN'
 ]
 
-def create_station_selector():
-    """Creates grid of checkboxes for station selection."""
+def station_selector():
+    """Creates and displays grid of checkboxes for station selection. Returns the checkbox dictionary."""
     checkboxes = {
         station: widgets.Checkbox(
             value=False,
