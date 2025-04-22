@@ -1,4 +1,4 @@
-# Data manipulation and analysis
+# Data yearanipulation and analysis
 import numpy as np
 import pandas as pd
 from typing import Any, Dict, List, Tuple, Callable
@@ -671,7 +671,7 @@ def display_discharge_dashboard(hydrograph_data):
 
 
 def year_selection_widget(auto_display=True):
-    """Creates widget for specifying training/validation/testing splits allowing multiple years per category.
+    """Creates widget for specifying training/validation/testing splits using SelectMultiple.
     
     Returns:
         widget_box: The widget interface
@@ -679,48 +679,54 @@ def year_selection_widget(auto_display=True):
     """
     # Predefined years
     years = np.array([2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023])
+    total_years = len(years)
     
-    # Convert years to list of strings for the checkboxes
+    # Convert years to list of strings for the options
     year_options = [str(year) for year in years]
     
     # Create section headers with larger font
     header_style = "font-size: 16px; font-weight: bold; margin-bottom: 5px;"
+    
+    # Instruction text
+    instruction_text = widgets.HTML(
+        value="<span style='font-size: 14px;'><b>Selection Instructions:</b> Hold Ctrl/Cmd key while clicking to select multiple items. Use Shift to select a range.</span>",
+        layout=widgets.Layout(margin='0px 0px 15px 0px')
+    )
+    
+    # Headers for each category
     training_header = widgets.HTML(value=f"<span style='{header_style}'>Training Years:</span>")
     validation_header = widgets.HTML(value=f"<span style='{header_style}'>Validation Years:</span>")
     testing_header = widgets.HTML(value=f"<span style='{header_style}'>Testing Years:</span>")
     
-    # Custom CSS for checkbox labels to increase font size and reduce spacing
-    checkbox_style = """
-    <style>
-    .widget-checkbox {
-        margin-right: -10px !important;  /* Less aggressive spacing reduction */
-        width: auto !important;
-    }
-    .widget-checkbox > label {
-        font-size: 14px !important;  /* Increase font size by ~1 from default */
-        padding-right: 15px !important; /* More padding to the right for better readability */
-    }
-    /* Add some padding to the checkbox containers to prevent clipping */
-    .widget-hbox {
-        padding-right: 15px !important;
-    }
-    </style>
-    """
-    style_widget = widgets.HTML(value=checkbox_style)
+    # Create SelectMultiple widgets for each category with horizontal layout
+    select_layout = widgets.Layout(width='400px', height='100px')  # Taller to show more options at once
     
-    # Create checkbox widgets for each year for each category
-    training_checkboxes = [widgets.Checkbox(value=False, description=str(year), indent=False) 
-                          for year in years]
-    validation_checkboxes = [widgets.Checkbox(value=False, description=str(year), indent=False) 
-                            for year in years]
-    testing_checkboxes = [widgets.Checkbox(value=False, description=str(year), indent=False) 
-                         for year in years]
+    training_select = widgets.SelectMultiple(
+        options=year_options,
+        value=[],
+        rows=5,
+        description='',
+        disabled=False,
+        layout=select_layout
+    )
     
-    # Create horizontal box layouts for each set of checkboxes with reduced spacing
-    box_layout = widgets.Layout(margin='0px 0px 0px 0px', padding='0px 0px 0px 0px')
-    training_box = widgets.HBox(training_checkboxes, layout=box_layout)
-    validation_box = widgets.HBox(validation_checkboxes, layout=box_layout)
-    testing_box = widgets.HBox(testing_checkboxes, layout=box_layout)
+    validation_select = widgets.SelectMultiple(
+        options=year_options,
+        value=[],
+        rows=5,
+        description='',
+        disabled=False,
+        layout=select_layout
+    )
+    
+    testing_select = widgets.SelectMultiple(
+        options=year_options,
+        value=[],
+        rows=5,
+        description='',
+        disabled=False,
+        layout=select_layout
+    )
     
     submit_button = widgets.Button(
         description="Submit",
@@ -737,9 +743,9 @@ def year_selection_widget(auto_display=True):
     
     # Function to get selected years for each category
     def get_selected_years():
-        training_years = [int(cb.description) for cb in training_checkboxes if cb.value]
-        validation_years = [int(cb.description) for cb in validation_checkboxes if cb.value]
-        testing_years = [int(cb.description) for cb in testing_checkboxes if cb.value]
+        training_years = [int(year) for year in training_select.value]
+        validation_years = [int(year) for year in validation_select.value]
+        testing_years = [int(year) for year in testing_select.value]
         
         return {
             'training': training_years,
@@ -798,16 +804,27 @@ def year_selection_widget(auto_display=True):
         
         return len(missing) == 0 and len(overlaps) == 0
     
-    # Function to update the selection display
+    # Function to update the selection display with percentages
     def update_display(change=None):
         selected = get_selected_years()
         
-        # Format the display content with larger font
+        # Calculate percentages
+        training_pct = len(selected['training']) / total_years * 100
+        validation_pct = len(selected['validation']) / total_years * 100
+        testing_pct = len(selected['testing']) / total_years * 100
+        
+        # Format the display content with larger font and percentages
         display_html = "<div style='font-size:15px;'>"
         display_html += "<b>Current Selection:</b><br>"
-        display_html += f"<b>Training:</b> {', '.join(map(str, selected['training'])) if selected['training'] else 'None'}<br>"
-        display_html += f"<b>Validation:</b> {', '.join(map(str, selected['validation'])) if selected['validation'] else 'None'}<br>"
-        display_html += f"<b>Testing:</b> {', '.join(map(str, selected['testing'])) if selected['testing'] else 'None'}"
+        display_html += f"<b>Training:</b> {', '.join(map(str, selected['training'])) if selected['training'] else 'None'} "
+        display_html += f"({len(selected['training'])} years, {training_pct:.1f}% of total)<br>"
+        
+        display_html += f"<b>Validation:</b> {', '.join(map(str, selected['validation'])) if selected['validation'] else 'None'} "
+        display_html += f"({len(selected['validation'])} years, {validation_pct:.1f}% of total)<br>"
+        
+        display_html += f"<b>Testing:</b> {', '.join(map(str, selected['testing'])) if selected['testing'] else 'None'} "
+        display_html += f"({len(selected['testing'])} years, {testing_pct:.1f}% of total)"
+        
         display_html += "</div>"
         
         # Update the selection display
@@ -816,9 +833,10 @@ def year_selection_widget(auto_display=True):
         # Check for warnings
         check_selections()
     
-    # Register observers for all checkboxes
-    for cb in training_checkboxes + validation_checkboxes + testing_checkboxes:
-        cb.observe(update_display, names='value')
+    # Register observers for the SelectMultiple widgets
+    training_select.observe(update_display, names='value')
+    validation_select.observe(update_display, names='value')
+    testing_select.observe(update_display, names='value')
     
     def on_submit_clicked(b):
         valid = check_selections()
@@ -831,10 +849,15 @@ def year_selection_widget(auto_display=True):
                 selection_state['submitted'] = True
                 selection_state['values'] = selected
                 
+                # Calculate percentages for the final output
+                training_pct = len(selected['training']) / total_years * 100
+                validation_pct = len(selected['validation']) / total_years * 100
+                testing_pct = len(selected['testing']) / total_years * 100
+                
                 print(f"✓ Submitted successfully!")
-                print(f"- Training years: {', '.join(map(str, selected['training']))}")
-                print(f"- Validation years: {', '.join(map(str, selected['validation']))}")
-                print(f"- Testing years: {', '.join(map(str, selected['testing']))}")
+                print(f"- Training years: {', '.join(map(str, selected['training']))} ({training_pct:.1f}%)")
+                print(f"- Validation years: {', '.join(map(str, selected['validation']))} ({validation_pct:.1f}%)")
+                print(f"- Testing years: {', '.join(map(str, selected['testing']))} ({testing_pct:.1f}%)")
             else:
                 selection_state['submitted'] = False
                 selection_state['values'] = None
@@ -849,12 +872,17 @@ def year_selection_widget(auto_display=True):
         else:
             return None
     
-    # Create layout
+    # Create horizontal layout for the select widgets
+    selects_hbox = widgets.HBox([
+        widgets.VBox([training_header, training_select]),
+        widgets.VBox([validation_header, validation_select]),
+        widgets.VBox([testing_header, testing_select])
+    ], layout=widgets.Layout(margin='0px 0px 15px 0px'))
+    
+    # Create layout for the whole widget
     widget_box = widgets.VBox([
-        style_widget,
-        training_header, training_box,
-        validation_header, validation_box,
-        testing_header, testing_box,
+        instruction_text,
+        selects_hbox,
         selection_display,
         warning_output,
         submit_button, 
