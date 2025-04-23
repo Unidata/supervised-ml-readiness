@@ -18,6 +18,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from xgboost import XGBRegressor
 
 # Utilities
+import random
 import time
 from typing import Any
 from sklearn.base import BaseEstimator
@@ -660,7 +661,7 @@ def display_discharge_dashboard(hydrograph_data):
 
 
 def year_selection_widget(auto_display=True):
-    """Creates widget for specifying training/validation/testing splits using SelectMultiple.
+    """Creates widget for specifying training/validation/testing splits using text input.
     
     Returns:
         widget_box: The widget interface
@@ -670,15 +671,12 @@ def year_selection_widget(auto_display=True):
     years = np.array([2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023])
     total_years = len(years)
     
-    # Convert years to list of strings for the options
-    year_options = [str(year) for year in years]
-    
     # Create section headers with larger font
     header_style = "font-size: 16px; font-weight: bold; margin-bottom: 5px;"
     
     # Instruction text
     instruction_text = widgets.HTML(
-        value="<span style='font-size: 14px;'><b>Selection Instructions:</b> Hold Ctrl/Cmd key while clicking to select multiple items. Use Shift to select a range.</span>",
+        value=f"<span style='font-size: 14px;'><b>Selection Instructions:</b> Enter the number of years for each category. Total must equal {total_years}. Minimum 1 year per category.</span>",
         layout=widgets.Layout(margin='0px 0px 15px 0px')
     )
     
@@ -687,34 +685,34 @@ def year_selection_widget(auto_display=True):
     validation_header = widgets.HTML(value=f"<span style='{header_style}'>Validation Years:</span>")
     testing_header = widgets.HTML(value=f"<span style='{header_style}'>Testing Years:</span>")
     
-    # Create SelectMultiple widgets for each category with horizontal layout
-    select_layout = widgets.Layout(width='400px', height='100px')  # Taller to show more options at once
+    # Create text input widgets for each category
+    input_layout = widgets.Layout(width='100px')
     
-    training_select = widgets.SelectMultiple(
-        options=year_options,
-        value=[],
-        rows=5,
+    training_input = widgets.IntText(
+        value=0,
         description='',
         disabled=False,
-        layout=select_layout
+        layout=input_layout,
+        min=0,
+        max=total_years
     )
     
-    validation_select = widgets.SelectMultiple(
-        options=year_options,
-        value=[],
-        rows=5,
+    validation_input = widgets.IntText(
+        value=0,
         description='',
         disabled=False,
-        layout=select_layout
+        layout=input_layout,
+        min=0,
+        max=total_years
     )
     
-    testing_select = widgets.SelectMultiple(
-        options=year_options,
-        value=[],
-        rows=5,
+    testing_input = widgets.IntText(
+        value=0,
         description='',
         disabled=False,
-        layout=select_layout
+        layout=input_layout,
+        min=0,
+        max=total_years
     )
     
     submit_button = widgets.Button(
@@ -732,66 +730,137 @@ def year_selection_widget(auto_display=True):
     
     # Function to get selected years for each category
     def get_selected_years():
-        training_years = [int(year) for year in training_select.value]
-        validation_years = [int(year) for year in validation_select.value]
-        testing_years = [int(year) for year in testing_select.value]
+        train_count = training_input.value
+        val_count = validation_input.value
+        test_count = testing_input.value
+        
+        # Randomly select years for each category
+        available_years = list(years)
+        random.shuffle(available_years)
+        
+        training_years = available_years[:train_count]
+        validation_years = available_years[train_count:train_count+val_count]
+        testing_years = available_years[train_count+val_count:]
         
         return {
-            'training': training_years,
-            'validation': validation_years,
-            'testing': testing_years
+            'training': sorted(training_years),
+            'validation': sorted(validation_years), 
+            'testing': sorted(testing_years)
         }
     
-    # Function to check for overlaps and missing selections
+    # Function to check for valid input
     def check_selections():
+        train_count = training_input.value
+        val_count = validation_input.value
+        test_count = testing_input.value
+        
+        total_selected = train_count + val_count + test_count
+        
+        warning_html = ""
+        valid = True
+        
+        # Check if at least one year is allocated to each category
+        if train_count < 1:
+            warning_html += "<span style='color:red; font-size:14px;'>⚠️ Training must have at least 1 year</span><br>"
+            valid = False
+        
+        if val_count < 1:
+            warning_html += "<span style='color:red; font-size:14px;'>⚠️ Validation must have at least 1 year</span><br>"
+            valid = False
+            
+        if test_count < 1:
+            warning_html += "<span style='color:red; font-size:14px;'>⚠️ Testing must have at least 1 year</span><br>"
+            valid = False
+        
+        # Check if total equals the required number
+        if total_selected != total_years:
+            warning_html += f"<span style='color:red; font-size:14px;'>⚠️ Total selected ({total_selected}) must equal {total_years}</span><br>"
+            valid = False
+        
+        warning_output.value = warning_html
+        return valid
+    
+    # Function to display selected years with counts and percentages
+    def display_selection():
         selected = get_selected_years()
         
-        # Check if any selections are made
-        has_training = len(selected['training']) > 0
-        has_validation = len(selected['validation']) > 0
-        has_testing = len(selected['testing']) > 0
+        train_years = ", ".join(map(str, selected['training']))
+        val_years = ", ".join(map(str, selected['validation']))
+        test_years = ", ".join(map(str, selected['testing']))
         
-        missing = []
-        if not has_training:
-            missing.append("Training")
-        if not has_validation:
-            missing.append("Validation")
-        if not has_testing:
-            missing.append("Testing")
+        train_count = len(selected['training'])
+        val_count = len(selected['validation'])
+        test_count = len(selected['testing'])
         
-        # Check for overlaps
-        training_set = set(selected['training'])
-        validation_set = set(selected['validation'])
-        testing_set = set(selected['testing'])
+        train_pct = (train_count / total_years) * 100
+        val_pct = (val_count / total_years) * 100
+        test_pct = (test_count / total_years) * 100
         
-        overlaps = []
-        
-        train_val_overlap = training_set.intersection(validation_set)
-        if train_val_overlap:
-            overlaps.append(f"Training and Validation overlap on years: {', '.join(map(str, train_val_overlap))}")
-            
-        train_test_overlap = training_set.intersection(testing_set)
-        if train_test_overlap:
-            overlaps.append(f"Training and Testing overlap on years: {', '.join(map(str, train_test_overlap))}")
-            
-        val_test_overlap = validation_set.intersection(testing_set)
-        if val_test_overlap:
-            overlaps.append(f"Validation and Testing overlap on years: {', '.join(map(str, val_test_overlap))}")
-        
-        # Generate warning messages
-        warning_html = ""
-        if missing:
-            warning_html += f"<span style='color:orange; font-size:14px;'>⚠️ Please select at least one year for: {', '.join(missing)}</span><br>"
-            
-        if overlaps:
-            warning_html += "<span style='color:red; font-size:14px;'>⚠️ Years cannot be used in multiple categories:</span><br>"
-            for overlap in overlaps:
-                warning_html += f"<span style='color:red; font-size:14px;'>- {overlap}</span><br>"
-            
-        # Update the warning display
-        warning_output.value = warning_html
-        
-        return len(missing) == 0 and len(overlaps) == 0
+        display_html = f"""
+        <div style='margin-top: 20px; font-size: 14px;'>
+            <p><b>Selected Years:</b></p>
+            <p><b>Training</b> ({train_count}, {train_pct:.1f}%): {train_years}</p>
+            <p><b>Validation</b> ({val_count}, {val_pct:.1f}%): {val_years}</p>
+            <p><b>Testing</b> ({test_count}, {test_pct:.1f}%): {test_years}</p>
+        </div>
+        """
+        selection_display.value = display_html
+    
+    # Update display when inputs change
+    def on_value_change(change):
+        check_selections()
+    
+    training_input.observe(on_value_change, names='value')
+    validation_input.observe(on_value_change, names='value')
+    testing_input.observe(on_value_change, names='value')
+    
+    # Submit button click handler
+    def on_submit_click(b):
+        if check_selections():
+            with result_output:
+                result_output.clear_output()
+                selection_state['submitted'] = True
+                selection_state['values'] = get_selected_years()
+                display_selection()
+        else:
+            with result_output:
+                result_output.clear_output()
+                print("\nPlease fix the errors before submitting.")
+    
+    submit_button.on_click(on_submit_click)
+    
+    # Create layout grid
+    grid = widgets.GridBox([
+        training_header, training_input,
+        validation_header, validation_input,
+        testing_header, testing_input
+    ], layout=widgets.Layout(
+        grid_template_columns='200px 150px',
+        grid_gap='10px',
+        margin='10px 0px'
+    ))
+    
+    # Combine all widgets
+    widget_box = widgets.VBox([
+        instruction_text,
+        grid,
+        submit_button,
+        warning_output,
+        selection_display,
+        result_output
+    ])
+    
+    # Function to get current selection
+    def get_selection():
+        if selection_state['submitted']:
+            return selection_state['values']
+        else:
+            return None
+    
+    if auto_display:
+        display(widget_box)
+    
+    return widget_box, get_selection
     
     # Function to update the selection display with percentages
     def update_display(change=None):
