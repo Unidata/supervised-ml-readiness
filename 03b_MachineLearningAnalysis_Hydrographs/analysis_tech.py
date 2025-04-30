@@ -81,7 +81,7 @@ def display_knowledgecheck():
     display(question, buttons, output)
 
 
-def display_blackhawk_gauge_dashboard(hydrograph_data):
+def display_blackhawk_gage_dashboard(hydrograph_data):
     """Creates and displays interactive dashboard for Blackhawk Gauge hydrograph data."""
     # Create interface controls
     plot_dropdown = widgets.Dropdown(
