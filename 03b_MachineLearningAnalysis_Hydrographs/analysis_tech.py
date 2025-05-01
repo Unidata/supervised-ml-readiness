@@ -81,8 +81,8 @@ def display_knowledgecheck():
     display(question, buttons, output)
 
 
-def display_blackhawk_gage_dashboard(hydrograph_data):
-    """Creates and displays interactive dashboard for Blackhawk Gauge hydrograph data."""
+def blackhawk_gage_dashboard(hydrograph_data):
+    """Creates and displays interactive dashboard for Blackhawk Gage hydrograph data."""
     # Create interface controls
     plot_dropdown = widgets.Dropdown(
         options=['Histogram', 'Annual Time Series', 'Yearly Comparison'],
@@ -107,7 +107,7 @@ def display_blackhawk_gage_dashboard(hydrograph_data):
                 fig, ax = plt.subplots(1, 1, tight_layout=True)
                 ax.hist(hydrograph_data['daily_mean_discharge_N_BLKHAWK'].dropna(), bins=30, 
                        color='skyblue', edgecolor='black')
-                ax.set_title("Histogram of Daily Mean Discharge at Blackhawk Gauge", fontsize=14)
+                ax.set_title("Histogram of Daily Mean Discharge at Blackhawk Gage", fontsize=14)
                 ax.set_xlabel("Daily Mean Discharge")
                 ax.set_ylabel("Number of records")
                 plt.show()
@@ -123,22 +123,31 @@ def display_blackhawk_gage_dashboard(hydrograph_data):
                     ax.plot(year_data['day_of_year'], year_data['daily_mean_discharge_N_BLKHAWK'], 
                            label=str(year))
                 
-                ax.set_title("Annual Comparison of Daily Mean Discharge at Blackhawk Gauge", fontsize=14)
+                ax.set_title("Annual Comparison of Daily Mean Discharge at Blackhawk Gage", fontsize=14)
                 ax.set_xlabel("Day of Year")
                 ax.set_ylabel("Daily Mean Discharge")
                 ax.legend(title="Year")
                 plt.show()
                 
             elif plot_dropdown.value == 'Yearly Comparison':
-                # Calculate yearly averages
-                yearly_avg = hydrograph_data.groupby('year')['daily_mean_discharge_N_BLKHAWK'].mean().reset_index()
+                # Calculate yearly sum instead of average
+                yearly_sum = hydrograph_data.groupby('year')['daily_mean_discharge_N_BLKHAWK'].sum().reset_index()
+                
+                # Calculate the median of yearly total discharge
+                median_yearly_discharge = yearly_sum['daily_mean_discharge_N_BLKHAWK'].median()
                 
                 fig, ax = plt.subplots(1, 1, tight_layout=True)
-                ax.bar(yearly_avg['year'].astype(str), yearly_avg['daily_mean_discharge_N_BLKHAWK'], 
+                ax.bar(yearly_sum['year'].astype(str), yearly_sum['daily_mean_discharge_N_BLKHAWK'], 
                       color='green', edgecolor='black')
-                ax.set_title("Yearly Average Discharge at Blackhawk Gauge", fontsize=14)
+                
+                # Add horizontal line for median discharge
+                ax.axhline(y=median_yearly_discharge, color='black', linestyle='--', 
+                          label=f'Median: {median_yearly_discharge:.2f}')
+                
+                ax.set_title("Yearly Total Discharge at Blackhawk Gage", fontsize=14)
                 ax.set_xlabel("Year")
-                ax.set_ylabel("Average Daily Mean Discharge")
+                ax.set_ylabel("Total Discharge")
+                ax.legend()
                 plt.xticks(rotation=45)
                 plt.show()
     
@@ -146,7 +155,7 @@ def display_blackhawk_gage_dashboard(hydrograph_data):
     plot_button.on_click(on_plot_button_click)
     
     # Display dashboard elements
-    display(widgets.HTML(value="<h3>Blackhawk Gauge Hydrograph Dashboard</h3>"), 
+    display(widgets.HTML(value="<h3>Blackhawk Gage Hydrograph Dashboard</h3>"), 
            plot_dropdown, 
            plot_button, 
            output)
