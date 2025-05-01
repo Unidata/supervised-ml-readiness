@@ -85,7 +85,7 @@ def blackhawk_gage_dashboard(hydrograph_data):
     """Creates and displays interactive dashboard for Blackhawk Gage hydrograph data."""
     # Create interface controls
     plot_dropdown = widgets.Dropdown(
-        options=['Histogram', 'Annual Time Series', 'Yearly Comparison'],
+        options=['Histogram', 'Annual Time Series', 'Annual Comparison'],
         value='Histogram',
         description='Plot Type:',
         disabled=False,
@@ -108,7 +108,7 @@ def blackhawk_gage_dashboard(hydrograph_data):
                 ax.hist(hydrograph_data['daily_mean_discharge_N_BLKHAWK'].dropna(), bins=30, 
                        color='skyblue', edgecolor='black')
                 ax.set_title("Histogram of Daily Mean Discharge at Blackhawk Gage", fontsize=14)
-                ax.set_xlabel("Daily Mean Discharge")
+                ax.set_xlabel("Daily Mean Discharge (cfs)")
                 ax.set_ylabel("Number of records")
                 plt.show()
             
@@ -125,28 +125,28 @@ def blackhawk_gage_dashboard(hydrograph_data):
                 
                 ax.set_title("Annual Comparison of Daily Mean Discharge at Blackhawk Gage", fontsize=14)
                 ax.set_xlabel("Day of Year")
-                ax.set_ylabel("Daily Mean Discharge")
+                ax.set_ylabel("Daily Mean Discharge (cfs)")
                 ax.legend(title="Year")
                 plt.show()
                 
-            elif plot_dropdown.value == 'Yearly Comparison':
-                # Calculate yearly sum instead of average
-                yearly_sum = hydrograph_data.groupby('year')['daily_mean_discharge_N_BLKHAWK'].sum().reset_index()
+            elif plot_dropdown.value == 'Annual Comparison':
+                # Calculate annual sum instead of average
+                annual_sum = hydrograph_data.groupby('year')['daily_mean_discharge_N_BLKHAWK'].sum().reset_index()
                 
-                # Calculate the median of yearly total discharge
-                median_yearly_discharge = yearly_sum['daily_mean_discharge_N_BLKHAWK'].median()
+                # Calculate the median of annual total discharge
+                median_annual_discharge = annual_sum['daily_mean_discharge_N_BLKHAWK'].median()
                 
                 fig, ax = plt.subplots(1, 1, tight_layout=True)
-                ax.bar(yearly_sum['year'].astype(str), yearly_sum['daily_mean_discharge_N_BLKHAWK'], 
+                ax.bar(annual_sum['year'].astype(str), annual_sum['daily_mean_discharge_N_BLKHAWK'], 
                       color='green', edgecolor='black')
                 
                 # Add horizontal line for median discharge
-                ax.axhline(y=median_yearly_discharge, color='black', linestyle='--', 
-                          label=f'Median: {median_yearly_discharge:.2f}')
+                ax.axhline(y=median_annual_discharge, color='black', linestyle='--', 
+                          label=f'Median: {median_annual_discharge:.2f}')
                 
-                ax.set_title("Yearly Total Discharge at Blackhawk Gage", fontsize=14)
+                ax.set_title("Annual Total Discharge at Blackhawk Gage", fontsize=14)
                 ax.set_xlabel("Year")
-                ax.set_ylabel("Total Discharge")
+                ax.set_ylabel("Total Discharge (cfs-days)")
                 ax.legend()
                 plt.xticks(rotation=45)
                 plt.show()
@@ -542,7 +542,7 @@ def model_eval(
     print(f"\nR² Score:\t{r2_val:.2f}")
 
 
-def display_discharge_dashboard(hydrograph_data):
+def discharge_dashboard(hydrograph_data):
     """Creates and displays interactive dashboard for multiple hydrograph stations."""
     
     discharge_columns = [col for col in hydrograph_data.columns 
@@ -568,7 +568,7 @@ def display_discharge_dashboard(hydrograph_data):
         location_dropdown.value = discharge_columns[0]
     
     plot_dropdown = widgets.Dropdown(
-        options=['Histogram', 'Annual Time Series', 'Yearly Comparison'],
+        options=['Histogram', 'Annual Time Series', 'Annual Comparison'],
         value='Histogram',
         description='Plot Type:',
         disabled=False,
@@ -602,7 +602,7 @@ def display_discharge_dashboard(hydrograph_data):
                     return
                 ax.hist(data_to_plot, bins=30, color='skyblue', edgecolor='black')
                 ax.set_title(f"Histogram of Daily Mean Discharge at {location_name}", fontsize=14)
-                ax.set_xlabel("Daily Mean Discharge")
+                ax.set_xlabel("Daily Mean Discharge (cfs)")
                 ax.set_ylabel("Number of records")
                 plt.show()
             
@@ -632,29 +632,38 @@ def display_discharge_dashboard(hydrograph_data):
                 
                 ax.set_title(f"Annual Comparison of Daily Mean Discharge at {location_name}", fontsize=14)
                 ax.set_xlabel("Day of Year")
-                ax.set_ylabel("Daily Mean Discharge")
+                ax.set_ylabel("Daily Mean Discharge (cfs)")
                 ax.legend(title="Year")
                 plt.show()
                 
-            elif plot_dropdown.value == 'Yearly Comparison':
+            elif plot_dropdown.value == 'Annual Comparison':
                 # Ensure required column exists
                 if 'year' not in hydrograph_data.columns:
                     print("Error: Data missing 'year' column needed for this plot")
                     return
                 
-                # Calculate yearly averages
-                yearly_avg = hydrograph_data.groupby('year')[selected_column].mean().reset_index()
+                # Calculate annual sum instead of average
+                annual_sum = hydrograph_data.groupby('year')[selected_column].sum().reset_index()
                 
-                if len(yearly_avg) == 0:
-                    print("No data available for yearly comparison")
+                if len(annual_sum) == 0:
+                    print("No data available for annual comparison")
                     return
+                
+                # Calculate the median of annual total discharge
+                median_annual_discharge = annual_sum[selected_column].median()
                     
                 fig, ax = plt.subplots(1, 1, tight_layout=True)
-                ax.bar(yearly_avg['year'].astype(str), yearly_avg[selected_column], 
+                ax.bar(annual_sum['year'].astype(str), annual_sum[selected_column], 
                       color='green', edgecolor='black')
-                ax.set_title(f"Yearly Average Discharge at {location_name}", fontsize=14)
+                
+                # Add horizontal line for median discharge
+                ax.axhline(y=median_annual_discharge, color='black', linestyle='--', 
+                          label=f'Median: {median_annual_discharge:.2f}')
+                
+                ax.set_title(f"Annual Total Discharge at {location_name}", fontsize=14)
                 ax.set_xlabel("Year")
-                ax.set_ylabel("Average Daily Mean Discharge")
+                ax.set_ylabel("Total Discharge (cfs-days)")
+                ax.legend()
                 plt.xticks(rotation=45)
                 plt.show()
     
