@@ -1,27 +1,17 @@
-name: cybertraining-pilot
+name: supervised-ml-readiness
 channels:
  - conda-forge
 dependencies:
-  # Required by JupyterLab
-  - 'python<3.13'
-  - nb_conda_kernels
-  - ipykernel
-  # User requested packages
-  - numpy
-  - matplotlib
-  - cartopy
-  - metpy
-  - siphon
-  - pandas
+  - python>=3.11
+  - jupyterlab>=4.0.0
+  - matplotlib>=3.7
+  - pandas>=2.0.0
+  - ipywidgets>=8.1.0
+  - scikit-learn>=1.3.0
+  - seaborn>=0.13.0
+  - pyarrow>=12.0.0
+  - xgboost>=2.0.3
   - pip
-  - xarray
-  - ipywidgets
-  - python-awips
-  - scikit-learn
-  - seaborn
-  - pyarrow
-  - xgboost
-  - voila
   - pip:
     # It is recommended to install a package using pip as a last resort, i.e.
     # when it is not found in the conda repos
