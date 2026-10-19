@@ -298,21 +298,21 @@ def create_correlation_plot_controls():
     return title, var_dropdown, plot_button, output
 
 
-def display_correlation_plot_dashboard(base_url="https://elearning.unidata.ucar.edu/dataeLearning/Cybertraining/applications/media/pairplot_"):
+def display_correlation_plot_dashboard(base_path="../assets/images/pairplot_"):
     """Creates and displays interactive dashboard for correlation plots."""
     # Create interface controls
     title, var_dropdown, plot_button, output = create_correlation_plot_controls()
     
     def update_image(_):
         selected_var = var_dropdown.value
-        image_url = f"{base_url}{selected_var}.png"
+        image_path = f"{base_path}{selected_var}.png"
         
         with output:
             output.clear_output(wait=True)
             display(HTML(
                 f'<center><i>Click to enlarge</i><br>'
-                f'<a href="{image_url}" target="blank">'
-                f'<img src="{image_url}" width="800px"></a></center>'
+                f'<a href="{image_path}" target="blank">'
+                f'<img src="{image_path}" width="800px"></a></center>'
             ))
     
     plot_button.on_click(update_image)
