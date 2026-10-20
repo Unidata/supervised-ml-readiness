@@ -11,7 +11,7 @@ Raw data and original size media available upon request.
 
 To request a JupyterHub for using these modules in your classroom, contact the <a href="https://unidata.ucar.edu/science-gateway/request-jupyterhub" target="blank">NSF Unidata Science Gateway</a> program. 
 
-<img src="assets/images/NSF-Unidata_lockup_horizontal_2023.png"/>
+<img src="assets/images/NSF-Unidata_lockup_horizontal_2026.png"/>
 
 This work was supported by NSF Unidata under award #2319979 from the US National Science Foundation. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
 
