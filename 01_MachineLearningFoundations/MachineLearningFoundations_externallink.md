@@ -1,3 +1,4 @@
-To enroll in Machine Learning Foundations in the Earth Systems Science, follow this link to NSF Unidata eLearning
+To enroll in Machine Learning Foundations in the Earth Systems Science, follow this link to COMET MetEd
 
-https://elearning.unidata.ucar.edu/course/view.php?id=12
+https://learn.meted.ucar.edu/#/online-courses/403af329-e91c-402a-8960-999ea38c9318
+
